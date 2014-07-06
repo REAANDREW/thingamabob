@@ -1,8 +1,8 @@
 {
   "name": "thingamabob",
-  "description": "mqtt client and server in node.js",
+  "description": "mqtt client and server in node.js for training exercises",
   "version": "0.1.0",
-  "homepage": "https://github.com/REAANDREW/mqtt-node",
+  "homepage": "https://github.com/REAANDREW/thingamabob",
   "author": {
     "name": "REAANDREW",
     "email": "email@andrewrea.co.uk",
@@ -10,15 +10,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/REAANDREW/mqtt-node.git"
+    "url": "git://github.com/REAANDREW/thingamabob.git"
   },
   "bugs": {
-    "url": "https://github.com/REAANDREW/mqtt-node/issues"
+    "url": "https://github.com/REAANDREW/thingamabob/issues"
   },
   "licenses": [
     {
       "type": "MIT",
-      "url": "https://github.com/REAANDREW/mqtt-node/blob/master/LICENSE-MIT"
+      "url": "https://github.com/REAANDREW/thingamabob/blob/master/LICENSE-MIT"
     }
   ],
   "main": "lib/thingamabob",
