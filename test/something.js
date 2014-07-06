@@ -44,6 +44,12 @@ describe('Parsing fixed header', function() {
       input.writeUInt8(0, 0);
       assert.equal(parseQualityOfService(input), qualityOfService.AT_MOST_ONCE);
     });
+
+    it('of at least once', function() {
+      input.writeUInt8(2, 0);
+      assert.equal(parseQualityOfService(input), qualityOfService.AT_LEAST_ONCE);
+    });
+
   });
 
   describe('parses the Message Type', function() {
