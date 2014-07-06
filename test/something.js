@@ -19,6 +19,11 @@ function parseQualityOfService(inputBuffer) {
   return twoBitTransformation;
 }
 
+function parseRetain(inputBuffer){
+  var firstByte = inputBuffer.readUInt8(0);
+  return firstByte & 0x01;
+}
+
 describe('Parsing fixed header', function() {
 
   var input;
@@ -36,6 +41,13 @@ describe('Parsing fixed header', function() {
     assert.equal(parseDuplicateDelivery(input), true);
     input.writeUInt8(0, 0);
     assert.equal(parseDuplicateDelivery(input), false);
+  });
+
+  it('parses the RETAIN Flag',  function(){
+    input.writeUInt8(1, 0);
+    assert.equal(parseRetain(input), true);
+    input.writeUInt8(0, 0);
+    assert.equal(parseRetain(input), false);
   });
 
   describe('parses the Quality of Service', function() {
