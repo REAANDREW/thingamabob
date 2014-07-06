@@ -88,5 +88,10 @@ describe('Parsing fixed header', function() {
       input.writeUInt8(128+64+16, 0);
       assert.equal(parseMessageType(input), messageTypes.PINGRESP);
     });
+
+    it('of DISCONNECT', function(){
+      input.writeUInt8(128+64+32, 0);
+      assert.equal(parseMessageType(input), messageTypes.DISCONNECT);
+    });
   });
 });
