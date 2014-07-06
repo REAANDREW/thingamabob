@@ -56,6 +56,11 @@ describe('Parsing fixed header', function() {
       assert.equal(parseQualityOfService(input), qualityOfService.EXACTLY_ONCE);
     });
 
+    it('of reserved', function() {
+      input.writeUInt8(4 + 2, 0);
+      assert.equal(parseQualityOfService(input), qualityOfService.RESERVED);
+    });
+
   });
 
   describe('parses the Message Type', function() {
