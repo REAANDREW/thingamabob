@@ -1,7 +1,7 @@
 {
   "name": "thingamabob",
   "description": "mqtt client and server in node.js for training exercises",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "homepage": "https://github.com/REAANDREW/thingamabob",
   "author": {
     "name": "REAANDREW",
@@ -23,7 +23,7 @@
   ],
   "main": "lib/thingamabob",
   "engines": {
-    "node": ">= 0.8.0"
+    "node": ">= 0.10.0"
   },
   "scripts": {
     "test": "grunt mochaTest"
