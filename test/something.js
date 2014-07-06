@@ -34,6 +34,11 @@ describe('Parsing fixed header', function() {
       assert.equal(parseMessageType(input), messageTypes.CONNACK);
     });
 
+    it('of PUBLISH', function(){
+      input.writeUInt8(32+16, 0);
+      assert.equal(parseMessageType(input), messageTypes.PUBLISH);
+    });
+
   });
 
 });
