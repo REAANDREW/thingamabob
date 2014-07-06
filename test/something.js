@@ -13,14 +13,22 @@ function parseDuplicateDelivery(inputBuffer) {
   return oneBitTransformation;
 }
 
+function parseQualityOfService(inputBuffer){
+  var firstByte = inputBuffer.readUInt8(0);
+  var twoBitTransformation = ((firstByte & 0x06) >> 1);
+  return twoBitTransformation;
+}
+
 describe('Parsing fixed header', function() {
 
   var input;
   var messageTypes;
+  var qualityOfService;
 
   beforeEach(function() {
     input = new Buffer(1);
     messageTypes = thingamabob.messageTypes;
+    qualityOfService = thingamabob.qualityOfService;
   });
 
   it('parses the DUP Flag', function() {
@@ -28,6 +36,14 @@ describe('Parsing fixed header', function() {
     assert.equal(parseDuplicateDelivery(input), true);
     input.writeUInt8(0, 0);
     assert.equal(parseDuplicateDelivery(input), false);
+  });
+
+  describe('parses the Quality of Service', function() {
+
+    it('of at most once', function() {
+      input.writeUInt8(0, 0);
+      assert.equal(parseQualityOfService(input), qualityOfService.AT_MOST_ONCE);
+    });
   });
 
   describe('parses the Message Type', function() {
