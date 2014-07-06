@@ -20,8 +20,9 @@ function parseQualityOfService(inputBuffer) {
 }
 
 function parseRetain(inputBuffer){
-  var firstByte = inputBuffer.readUInt8(0);
-  return firstByte & 0x01;
+  var parser = thingamabob.FixedHeaderParser();
+  var header = parser.parse(inputBuffer);
+  return header.retain;
 }
 
 describe('Parsing fixed header', function() {
