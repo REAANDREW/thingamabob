@@ -8,9 +8,9 @@ function parseMessageType(inputBuffer) {
 }
 
 function parseDuplicateDelivery(inputBuffer) {
-  var firstByte = inputBuffer.readUInt8(0);
-  var oneBitTransformation = ((firstByte & 0x08) >> 3);
-  return oneBitTransformation;
+  var parser = thingamabob.FixedHeaderParser();
+  var header = parser.parse(inputBuffer);
+  return header.duplicateDelivery;
 }
 
 function parseQualityOfService(inputBuffer) {
