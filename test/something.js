@@ -2,9 +2,9 @@ var assert = require('assert');
 var thingamabob = require('../lib/thingamabob');
 
 function parseMessageType(inputBuffer) {
-  var firstByte = inputBuffer.readUInt8(0);
-  var fourBitTransformation = ((firstByte & 0xf0) >> 4);
-  return fourBitTransformation;
+  var parser = thingamabob.FixedHeaderParser();
+  var header = parser.parse(inputBuffer);
+  return header.messageType;
 }
 
 function parseDuplicateDelivery(inputBuffer) {
