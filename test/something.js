@@ -83,79 +83,79 @@ describe('Parsing fixed header', function() {
 
     it('of Reserved', function() {
       input.writeUInt8(0, 0);
-      assert.equal(parseMessageType(input), messageTypes.RESERVED);
+      assert.equal(parser.parse(input).messageType, messageTypes.RESERVED);
       input.writeUInt8(128 + 64 + 32 + 16, 0);
-      assert.equal(parseMessageType(input), 15);
+      assert.equal(parser.parse(input).messageType, 15);
     });
 
     it('of CONNECT', function() {
       input.writeUInt8(16, 0);
-      assert.equal(parseMessageType(input), messageTypes.CONNECT);
+      assert.equal(parser.parse(input).messageType, messageTypes.CONNECT);
     });
 
     it('of CONNACK', function() {
       input.writeUInt8(32, 0);
-      assert.equal(parseMessageType(input), messageTypes.CONNACK);
+      assert.equal(parser.parse(input).messageType, messageTypes.CONNACK);
     });
 
     it('of PUBLISH', function() {
       input.writeUInt8(32 + 16, 0);
-      assert.equal(parseMessageType(input), messageTypes.PUBLISH);
+      assert.equal(parser.parse(input).messageType, messageTypes.PUBLISH);
     });
 
     it('of PUBACK', function() {
       input.writeUInt8(64, 0);
-      assert.equal(parseMessageType(input), messageTypes.PUBACK);
+      assert.equal(parser.parse(input).messageType, messageTypes.PUBACK);
     });
 
     it('of PUBREC', function() {
       input.writeUInt8(64 + 16, 0);
-      assert.equal(parseMessageType(input), messageTypes.PUBREC);
+      assert.equal(parser.parse(input).messageType, messageTypes.PUBREC);
     });
 
     it('of PUBREL', function() {
       input.writeUInt8(64 + 32, 0);
-      assert.equal(parseMessageType(input), messageTypes.PUBREL);
+      assert.equal(parser.parse(input).messageType, messageTypes.PUBREL);
     });
 
     it('of PUBCOMP', function() {
       input.writeUInt8(64 + 32 + 16, 0);
-      assert.equal(parseMessageType(input), messageTypes.PUBCOMP);
+      assert.equal(parser.parse(input).messageType, messageTypes.PUBCOMP);
     });
 
     it('of SUBSCRIBE', function() {
       input.writeUInt8(128, 0);
-      assert.equal(parseMessageType(input), messageTypes.SUBSCRIBE);
+      assert.equal(parser.parse(input).messageType, messageTypes.SUBSCRIBE);
     });
 
     it('of SUBACK', function() {
       input.writeUInt8(128 + 16, 0);
-      assert.equal(parseMessageType(input), messageTypes.SUBACK);
+      assert.equal(parser.parse(input).messageType, messageTypes.SUBACK);
     });
 
     it('of UNSUBSCRIBE', function() {
       input.writeUInt8(128 + 32, 0);
-      assert.equal(parseMessageType(input), messageTypes.UNSUBSCRIBE);
+      assert.equal(parser.parse(input).messageType, messageTypes.UNSUBSCRIBE);
     });
 
     it('of UNSUBACK', function() {
       input.writeUInt8(128 + 32 + 16, 0);
-      assert.equal(parseMessageType(input), messageTypes.UNSUBACK);
+      assert.equal(parser.parse(input).messageType, messageTypes.UNSUBACK);
     });
 
     it('of PINGREQ', function() {
       input.writeUInt8(128 + 64, 0);
-      assert.equal(parseMessageType(input), messageTypes.PINGREQ);
+      assert.equal(parser.parse(input).messageType, messageTypes.PINGREQ);
     });
 
     it('of PINGRESP', function() {
       input.writeUInt8(128 + 64 + 16, 0);
-      assert.equal(parseMessageType(input), messageTypes.PINGRESP);
+      assert.equal(parser.parse(input).messageType, messageTypes.PINGRESP);
     });
 
     it('of DISCONNECT', function() {
       input.writeUInt8(128 + 64 + 32, 0);
-      assert.equal(parseMessageType(input), messageTypes.DISCONNECT);
+      assert.equal(parser.parse(input).messageType, messageTypes.DISCONNECT);
     });
 
   });
