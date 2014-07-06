@@ -1,5 +1,5 @@
 var assert = require('assert');
-var mqtt = require('../lib/thingamabob');
+var thingamabob = require('../lib/thingamabob');
 
 function parseMessageType(inputBuffer) {
   var firstByte = inputBuffer.readUInt8(0);
@@ -12,9 +12,11 @@ describe('Parsing fixed header', function() {
   describe('parses the Message Type', function() {
 
     var input;
+    var messageTypes;
 
     beforeEach(function() {
       input = new Buffer(1);
+      messageTypes = thingamabob.messageTypes;
     });
 
     it('of Reserved', function() {
@@ -25,6 +27,11 @@ describe('Parsing fixed header', function() {
     it('of CONNECT', function() {
       input.writeUInt8(16, 0);
       assert.equal(parseMessageType(input), messageTypes.CONNECT);
+    });
+
+    it('of CONNACK', function() {
+      input.writeUInt8(32, 0);
+      assert.equal(parseMessageType(input), messageTypes.CONNACK);
     });
 
   });
