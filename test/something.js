@@ -1,9 +1,5 @@
 var assert = require('assert');
-
-var messageTypes = {
-  RESERVED: 0,
-  CONNECT: 1
-}
+var mqtt = require('../lib/thingamabob');
 
 function parseMessageType(inputBuffer) {
   var firstByte = inputBuffer.readUInt8(0);
