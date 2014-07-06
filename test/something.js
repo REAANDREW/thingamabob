@@ -22,6 +22,8 @@ describe('Parsing fixed header', function() {
     it('of Reserved', function() {
       input.writeUInt8(0, 0);
       assert.equal(parseMessageType(input), messageTypes.RESERVED);
+      input.writeUInt8(128 + 64 + 32 + 16, 0);
+      assert.equal(parseMessageType(input), 15);
     });
 
     it('of CONNECT', function() {
@@ -34,64 +36,65 @@ describe('Parsing fixed header', function() {
       assert.equal(parseMessageType(input), messageTypes.CONNACK);
     });
 
-    it('of PUBLISH', function(){
-      input.writeUInt8(32+16, 0);
+    it('of PUBLISH', function() {
+      input.writeUInt8(32 + 16, 0);
       assert.equal(parseMessageType(input), messageTypes.PUBLISH);
     });
 
-    it('of PUBACK', function(){
+    it('of PUBACK', function() {
       input.writeUInt8(64, 0);
       assert.equal(parseMessageType(input), messageTypes.PUBACK);
     });
 
-    it('of PUBREC', function(){
-      input.writeUInt8(64+16, 0);
+    it('of PUBREC', function() {
+      input.writeUInt8(64 + 16, 0);
       assert.equal(parseMessageType(input), messageTypes.PUBREC);
     });
 
-    it('of PUBREL', function(){
-      input.writeUInt8(64+32, 0);
+    it('of PUBREL', function() {
+      input.writeUInt8(64 + 32, 0);
       assert.equal(parseMessageType(input), messageTypes.PUBREL);
     });
 
-    it('of PUBCOMP', function(){
-      input.writeUInt8(64+32+16, 0);
+    it('of PUBCOMP', function() {
+      input.writeUInt8(64 + 32 + 16, 0);
       assert.equal(parseMessageType(input), messageTypes.PUBCOMP);
     });
 
-    it('of SUBSCRIBE', function(){
+    it('of SUBSCRIBE', function() {
       input.writeUInt8(128, 0);
       assert.equal(parseMessageType(input), messageTypes.SUBSCRIBE);
     });
 
-    it('of SUBACK', function(){
-      input.writeUInt8(128+16, 0);
+    it('of SUBACK', function() {
+      input.writeUInt8(128 + 16, 0);
       assert.equal(parseMessageType(input), messageTypes.SUBACK);
     });
 
-    it('of UNSUBSCRIBE', function(){
-      input.writeUInt8(128+32, 0);
+    it('of UNSUBSCRIBE', function() {
+      input.writeUInt8(128 + 32, 0);
       assert.equal(parseMessageType(input), messageTypes.UNSUBSCRIBE);
     });
 
-    it('of UNSUBACK', function(){
-      input.writeUInt8(128+32+16, 0);
+    it('of UNSUBACK', function() {
+      input.writeUInt8(128 + 32 + 16, 0);
       assert.equal(parseMessageType(input), messageTypes.UNSUBACK);
     });
 
-    it('of PINGREQ', function(){
-      input.writeUInt8(128+64, 0);
+    it('of PINGREQ', function() {
+      input.writeUInt8(128 + 64, 0);
       assert.equal(parseMessageType(input), messageTypes.PINGREQ);
     });
 
-    it('of PINGRESP', function(){
-      input.writeUInt8(128+64+16, 0);
+    it('of PINGRESP', function() {
+      input.writeUInt8(128 + 64 + 16, 0);
       assert.equal(parseMessageType(input), messageTypes.PINGRESP);
     });
 
-    it('of DISCONNECT', function(){
-      input.writeUInt8(128+64+32, 0);
+    it('of DISCONNECT', function() {
+      input.writeUInt8(128 + 64 + 32, 0);
       assert.equal(parseMessageType(input), messageTypes.DISCONNECT);
     });
+
   });
 });
