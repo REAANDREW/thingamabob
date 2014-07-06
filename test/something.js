@@ -13,7 +13,7 @@ function parseDuplicateDelivery(inputBuffer) {
   return oneBitTransformation;
 }
 
-function parseQualityOfService(inputBuffer){
+function parseQualityOfService(inputBuffer) {
   var firstByte = inputBuffer.readUInt8(0);
   var twoBitTransformation = ((firstByte & 0x06) >> 1);
   return twoBitTransformation;
@@ -48,6 +48,12 @@ describe('Parsing fixed header', function() {
     it('of at least once', function() {
       input.writeUInt8(2, 0);
       assert.equal(parseQualityOfService(input), qualityOfService.AT_LEAST_ONCE);
+    });
+
+
+    it('of exactly once', function() {
+      input.writeUInt8(4, 0);
+      assert.equal(parseQualityOfService(input), qualityOfService.EXACTLY_ONCE);
     });
 
   });
