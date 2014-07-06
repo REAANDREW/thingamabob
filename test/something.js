@@ -14,9 +14,9 @@ function parseDuplicateDelivery(inputBuffer) {
 }
 
 function parseQualityOfService(inputBuffer) {
-  var firstByte = inputBuffer.readUInt8(0);
-  var twoBitTransformation = ((firstByte & 0x06) >> 1);
-  return twoBitTransformation;
+  var parser = thingamabob.FixedHeaderParser();
+  var header = parser.parse(inputBuffer);
+  return header.qualityOfService;
 }
 
 function parseRetain(inputBuffer){
