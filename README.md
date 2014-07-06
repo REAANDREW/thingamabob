@@ -1,4 +1,4 @@
-# thingamabob [![Build Status](https://secure.travis-ci.org/vagrant/mqtt-node.png?branch=master)](http://travis-ci.org/vagrant/mqtt-node)
+# thingamabob [![Build Status](https://secure.travis-ci.org/vagrant/mqtt-node.png?branch=master)](http://travis-ci.org/REAANDREW/thingamabob)
 
 mqtt client and server in node.js
 
