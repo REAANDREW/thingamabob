@@ -59,5 +59,9 @@ describe('Parsing fixed header', function() {
       assert.equal(parseMessageType(input), messageTypes.PUBCOMP);
     });
 
+    it('of SUBSCRIBE', function(){
+      input.writeUInt8(128, 0);
+      assert.equal(parseMessageType(input), messageTypes.SUBSCRIBE);
+    });
   });
 });
