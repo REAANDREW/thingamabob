@@ -49,6 +49,15 @@ describe('Parsing fixed header', function() {
       assert.equal(parseMessageType(input), messageTypes.PUBREC);
     });
 
+    it('of PUBREL', function(){
+      input.writeUInt8(64+32, 0);
+      assert.equal(parseMessageType(input), messageTypes.PUBREL);
+    });
+
+    it('of PUBCOMP', function(){
+      input.writeUInt8(64+32+16, 0);
+      assert.equal(parseMessageType(input), messageTypes.PUBCOMP);
+    });
 
   });
 });
