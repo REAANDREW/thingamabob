@@ -3,21 +3,35 @@ var thingamabob = require('../lib/thingamabob');
 
 function parseMessageType(inputBuffer) {
   var firstByte = inputBuffer.readUInt8(0);
-  var fourBitTransformation = ((0xf0 & firstByte) >> 4);
+  var fourBitTransformation = ((firstByte & 0xf0) >> 4);
   return fourBitTransformation;
+}
+
+function parseDuplicateDelivery(inputBuffer) {
+  var firstByte = inputBuffer.readUInt8(0);
+  var oneBitTransformation = ((firstByte & 0x08) >> 3);
+  return oneBitTransformation;
 }
 
 describe('Parsing fixed header', function() {
 
+  var input;
+  var messageTypes;
+
+  beforeEach(function() {
+    input = new Buffer(1);
+    messageTypes = thingamabob.messageTypes;
+  });
+
+  it('parses the DUP Flag', function() {
+    input.writeUInt8(8, 0);
+    assert.equal(parseDuplicateDelivery(input), true);
+    input.writeUInt8(0, 0);
+    assert.equal(parseDuplicateDelivery(input), false);
+  });
+
   describe('parses the Message Type', function() {
 
-    var input;
-    var messageTypes;
-
-    beforeEach(function() {
-      input = new Buffer(1);
-      messageTypes = thingamabob.messageTypes;
-    });
 
     it('of Reserved', function() {
       input.writeUInt8(0, 0);
