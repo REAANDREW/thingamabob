@@ -57,23 +57,23 @@ describe('Parsing fixed header', function() {
 
     it('of at most once', function() {
       input.writeUInt8(0, 0);
-      assert.equal(parseQualityOfService(input), qualityOfService.AT_MOST_ONCE);
+      assert.equal(parser.parse(input).qualityOfService, qualityOfService.AT_MOST_ONCE);
     });
 
     it('of at least once', function() {
       input.writeUInt8(2, 0);
-      assert.equal(parseQualityOfService(input), qualityOfService.AT_LEAST_ONCE);
+      assert.equal(parser.parse(input).qualityOfService, qualityOfService.AT_LEAST_ONCE);
     });
 
 
     it('of exactly once', function() {
       input.writeUInt8(4, 0);
-      assert.equal(parseQualityOfService(input), qualityOfService.EXACTLY_ONCE);
+      assert.equal(parser.parse(input).qualityOfService, qualityOfService.EXACTLY_ONCE);
     });
 
     it('of reserved', function() {
       input.writeUInt8(4 + 2, 0);
-      assert.equal(parseQualityOfService(input), qualityOfService.RESERVED);
+      assert.equal(parser.parse(input).qualityOfService, qualityOfService.RESERVED);
     });
 
   });
