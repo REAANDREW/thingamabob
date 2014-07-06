@@ -19,7 +19,7 @@ function parseQualityOfService(inputBuffer) {
   return header.qualityOfService;
 }
 
-function parseRetain(inputBuffer){
+function parseRetain(inputBuffer) {
   var parser = thingamabob.FixedHeaderParser();
   var header = parser.parse(inputBuffer);
   return header.retain;
@@ -27,11 +27,13 @@ function parseRetain(inputBuffer){
 
 describe('Parsing fixed header', function() {
 
+  var parser;
   var input;
   var messageTypes;
   var qualityOfService;
 
   beforeEach(function() {
+    parser = thingamabob.FixedHeaderParser();
     input = new Buffer(1);
     messageTypes = thingamabob.messageTypes;
     qualityOfService = thingamabob.qualityOfService;
@@ -39,16 +41,16 @@ describe('Parsing fixed header', function() {
 
   it('parses the DUP Flag', function() {
     input.writeUInt8(8, 0);
-    assert.equal(parseDuplicateDelivery(input), true);
+    assert.equal(parser.parse(input).duplicateDelivery, true);
     input.writeUInt8(0, 0);
-    assert.equal(parseDuplicateDelivery(input), false);
+    assert.equal(parser.parse(input).duplicateDelivery, false);
   });
 
-  it('parses the RETAIN Flag',  function(){
+  it('parses the RETAIN Flag', function() {
     input.writeUInt8(1, 0);
-    assert.equal(parseRetain(input), true);
+    assert.equal(parser.parse(input).retain, true);
     input.writeUInt8(0, 0);
-    assert.equal(parseRetain(input), false);
+    assert.equal(parser.parse(input).retain, false);
   });
 
   describe('parses the Quality of Service', function() {
