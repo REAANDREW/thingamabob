@@ -22,22 +22,6 @@ module.exports = function(grunt) {
                 },
                 src: ['test/**/*.js']
             },
-            jenkinsCov: {
-                options: {
-                    reporter: 'mocha-cobertura-reporter',
-                    require: 'test/blanket',
-                    quiet: true,
-                    captureFile: 'coverage.xml'
-                },
-                src: ['test/**/*.js']
-            },
-            jenkinsCount: {
-                options: {
-                    reporter: 'mocha-jenkins-reporter',
-                    quiet: true
-                },
-                src: ['test/**/*.js']
-            }
         },
         jshint: {
             options: {
@@ -54,14 +38,6 @@ module.exports = function(grunt) {
             },
             bin: {
                 src: ['bin/*']
-            },
-            jenkins: {
-                options: {
-                    jshintrc: '.jshintrc',
-                    reporter: 'checkstyle',
-                    reporterOutput: 'checkstyle-result.xml'
-                },
-                src: ['lib/**/*.js', 'test/**/*.js', 'bin/*']
             },
         },
         watch: {
@@ -92,5 +68,4 @@ module.exports = function(grunt) {
     // Default task.
     grunt.registerTask('default', ['jshint:gruntfile', 'jshint:bin', 'jshint:lib', 'jshint:test', 'mochaTest:test', 'mochaTest:coverage']);
 
-    grunt.registerTask('jenkins', ['mochaTest:jenkinsCount', 'mochaTest:jenkinsCov', 'jshint:jenkins']);
 };
