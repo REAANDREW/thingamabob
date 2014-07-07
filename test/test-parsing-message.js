@@ -12,7 +12,7 @@ describe('Parsing fixed header', function() {
 
   beforeEach(function() {
     parser = thingamabob.FixedHeaderParser();
-    input = new Buffer(1);
+    input = new Buffer(5);
     messageTypes = thingamabob.messageTypes;
     qualityOfService = thingamabob.qualityOfService;
   });

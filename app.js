@@ -8,12 +8,17 @@
 
 'use strict';
 
+var thingamabob = require('./lib/thingamabob');
 var net = require('net');
+
+var parser = new thingamabob.FixedHeaderParser();
 
 var server = net.createServer(function(connection){
   connection.on('data', function(buffer){
-    console.log(buffer);
-
+    var result = parser.parse(buffer);
+    console.log(result);
+    console.log(buffer.readUInt8(0));
+    console.log(buffer.readUInt8(0).toString(2));
   });
   connection.on('end', function(){
     console.log('server disconnected');
