@@ -17,8 +17,8 @@ var server = net.createServer(function(connection){
   connection.on('data', function(buffer){
     var result = parser.parse(buffer);
     console.log(result);
-    console.log(buffer.readUInt8(0));
-    console.log(buffer.readUInt8(0).toString(2));
+    console.log(buffer);
+    console.log(buffer.toString('utf-8'));
   });
   connection.on('end', function(){
     console.log('server disconnected');
