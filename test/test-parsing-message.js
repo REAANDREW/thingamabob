@@ -3,6 +3,20 @@
 var assert = require('assert');
 var thingamabob = require('../lib/thingamabob');
 
+describe('Parsing variable header', function(){
+
+  it.skip('parses the Protocol Name', function(){
+    var expected = 'BOBO';
+    var testProtocolName = new Buffer(expected);
+    var input = new Buffer(5 + 2 + testProtocolName.length);
+    var parser = new thingamabob.MessageParser();
+    var result = parser.parse(input);
+    var variableHeader = result.variableHeader;
+    assert.equal(variableHeader.protocolName, expected);
+  });
+
+});
+
 describe('Parsing fixed header', function() {
 
   var parser;
@@ -11,7 +25,7 @@ describe('Parsing fixed header', function() {
   var qualityOfService;
 
   beforeEach(function() {
-    parser = thingamabob.FixedHeaderParser();
+    parser = new thingamabob.MessageParser();
     input = new Buffer(5);
     messageTypes = thingamabob.messageTypes;
     qualityOfService = thingamabob.qualityOfService;

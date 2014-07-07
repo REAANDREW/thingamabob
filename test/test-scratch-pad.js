@@ -1,3 +1,5 @@
+'use strict';
+
 describe('scratch pad', function(){
 
   it('should encode a string for the variable header protocol name', function(){
@@ -7,8 +9,6 @@ describe('scratch pad', function(){
     protoNameBuffer.writeUInt8(0, 0);
     protoNameBuffer.writeUInt8(exampleProtocolName.length, 1);
     exampleProtocolName.copy(protoNameBuffer, 2, 0);
-    console.log(protoNameBuffer.toString());
-    console.log(protoNameBuffer);
   });
 
 });
