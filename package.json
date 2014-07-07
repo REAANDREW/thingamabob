@@ -31,9 +31,12 @@
   "devDependencies": {
     "blanket": "^1.1.6",
     "grunt": "^0.4.5",
-    "grunt-contrib-jshint": "~0.6.4",
+    "grunt-blanket": "0.0.8",
+    "grunt-contrib-jshint": "^0.10.0",
     "grunt-contrib-nodeunit": "~0.2.0",
-    "grunt-contrib-watch": "~0.5.3"
+    "grunt-contrib-watch": "^0.6.1",
+    "grunt-mocha-test": "^0.11.0",
+    "grunt-notify": "^0.3.0"
   },
   "keywords": [],
   "dependencies": {

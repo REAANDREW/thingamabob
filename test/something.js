@@ -1,29 +1,7 @@
+'use strict';
+
 var assert = require('assert');
 var thingamabob = require('../lib/thingamabob');
-
-function parseMessageType(inputBuffer) {
-  var parser = thingamabob.FixedHeaderParser();
-  var header = parser.parse(inputBuffer);
-  return header.messageType;
-}
-
-function parseDuplicateDelivery(inputBuffer) {
-  var parser = thingamabob.FixedHeaderParser();
-  var header = parser.parse(inputBuffer);
-  return header.duplicateDelivery;
-}
-
-function parseQualityOfService(inputBuffer) {
-  var parser = thingamabob.FixedHeaderParser();
-  var header = parser.parse(inputBuffer);
-  return header.qualityOfService;
-}
-
-function parseRetain(inputBuffer) {
-  var parser = thingamabob.FixedHeaderParser();
-  var header = parser.parse(inputBuffer);
-  return header.retain;
-}
 
 describe('Parsing fixed header', function() {
 

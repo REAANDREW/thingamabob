@@ -1,7 +1,7 @@
 {
   // See http://www.jshint.com/docs/options/
   // Enforcing Options:
-  "bitwise": true,
+  "bitwise": false,
   "camelcase": true,
   "curly": true,
   "eqeqeq": true,
@@ -9,7 +9,7 @@
   "forin": true,
   "freeze": true,
   "immed": true,
-  "indent": 2,
+  "indent": 4,
   "latedef": "nofunc",
   "newcap": true,
   "noarg": true,
@@ -23,19 +23,19 @@
   "trailing": true,
   "maxcomplexity": 3,
   "maxdepth": 2,
-  "maxparams": 5,
+  "maxparams": 4,
   "maxstatements": 25,
-
+ 
   // Relaxing options:
   "esnext": true,
   "lastsemic": true,
-
+ 
   // Environments:
   "node": true,
   "globals"   : {
-    /* QUNIT */
-    "test"       : false,
-    "equal"      : false,
+    /* MOCHA */
+    "describe"   : false,
+    "it"         : false,
     "before"     : false,
     "beforeEach" : false,
     "after"      : false,
