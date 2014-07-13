@@ -35,6 +35,12 @@ describe('Parsing', function() {
         parsedMessage = parser.parse(input);
         assert.equal(parsedMessage.variableHeader.cleanSession, true);
       });
+
+      it('when false', function() {
+        input.writeUInt8(0, 9);
+        parsedMessage = parser.parse(input);
+        assert.equal(parsedMessage.variableHeader.cleanSession, false);
+      });
     });
 
   });
