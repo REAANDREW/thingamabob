@@ -3,7 +3,10 @@
 var assert = require('assert');
 var net = require('net');
 var thingamabob = require('../lib/thingamabob');
-var messageTypes = thingamabob.messageTypes;
+var parsers = require('../lib/parsers');
+var constants = require('../lib/constants');
+
+var messageTypes = constants.messageTypes;
 
 describe('sending', function() {
 
@@ -13,7 +16,7 @@ describe('sending', function() {
   var fixedHeaderParser;
 
   beforeEach(function(done) {
-    fixedHeaderParser = new thingamabob.FixedHeaderParser();
+    fixedHeaderParser = new parsers.FixedHeaderParser();
     port = 8000;
     server = thingamabob.createServer({
       connectionTimeout: 20,
@@ -32,22 +35,24 @@ describe('sending', function() {
 
       it('the server closes the client connection', function(done) {
         var protocolName = 'PROT';
-        var message = new thingamabob.ConnectMessage({
-          protocolName : protocolName 
-        });
+        var input = new Buffer(8);
+        input.writeUInt8(1 | 16, 0);
+        input.writeUInt8(1, 1);
+        input.writeUInt16BE(protocolName.length, 2);
+        input.write(protocolName, 4);
         client = net.connect({
           port: port
         }, function() {
           client.on('end', function() {
             done();
           });
-          client.write(message.toBuffer());
+          client.write(input);
         });
       });
 
     });
 
-    describe('with Clean Session set', function(){
+    describe('with Clean Session set', function() {
 
       it('returns a CONNACK message with Session Present set to false');
       it('returns a CONNACK message with a zero return code');
@@ -86,7 +91,7 @@ describe('sending', function() {
         port: port
       }, function() {
         client.on('data', function(data) {
-          var connAckMessageParser = new thingamabob.ConnAckMessageParser();
+          var connAckMessageParser = new parsers.ConnAckMessageParser();
           var message = connAckMessageParser.parse(data);
           assert.equal(message.fixedHeader.messageType, messageTypes.CONNACK);
           assert.equal(message.fixedHeader.remainingLength, 2);
@@ -108,7 +113,7 @@ describe('sending', function() {
         port: port
       }, function() {
         client.on('data', function(data) {
-          var fixedHeaderParser = new thingamabob.FixedHeaderParser();
+          var fixedHeaderParser = new parsers.FixedHeaderParser();
           var fixedHeader = fixedHeaderParser.parse(data);
           assert.equal(fixedHeader.messageType, messageTypes.CONNACK);
           assert.equal(fixedHeader.remainingLength, 2);

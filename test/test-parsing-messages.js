@@ -1,7 +1,8 @@
 'use strict';
 
 var assert = require('assert');
-var thingamabob = require('../lib/thingamabob');
+var parsers = require('../lib/parsers');
+var constants = require('../lib/constants');
 
 
 describe('Parsing', function() {
@@ -16,7 +17,7 @@ describe('Parsing', function() {
     var parsedMessage;
 
     beforeEach(function(){
-      parser = new thingamabob.ConnAckMessageParser();
+      parser = new parsers.ConnAckMessageParser();
       message = new Buffer(4);
       message.writeUInt8(1,2);
       parsedMessage = parser.parse(message);
@@ -36,7 +37,7 @@ describe('ProtocolNameParser', function() {
     var buffer = new Buffer(4);
     buffer.writeUInt16BE(0x02, 0);
     buffer.write('AA', 2);
-    var protocolNameParser = new thingamabob.ProtocolNameParser();
+    var protocolNameParser = new parsers.ProtocolNameParser();
     var result = protocolNameParser.parse(buffer, 0);
     assert.equal(result, 'AA');
   });
@@ -51,10 +52,10 @@ describe('FixedHeaderParser', function() {
   var qualityOfService;
 
   beforeEach(function() {
-    parser = new thingamabob.FixedHeaderParser();
+    parser = new parsers.FixedHeaderParser();
     input = new Buffer(5);
-    messageTypes = thingamabob.messageTypes;
-    qualityOfService = thingamabob.qualityOfService;
+    messageTypes = constants.messageTypes;
+    qualityOfService = constants.qualityOfService;
   });
 
   function parse(input) {
