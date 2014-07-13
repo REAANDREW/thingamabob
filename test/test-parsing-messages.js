@@ -54,6 +54,9 @@ describe('Parsing', function() {
     beforeEach(function() {
       parser = new parsers.ConnAckMessageParser();
       message = new Buffer(4);
+      message.writeUInt8(0, 0);
+      message.writeUInt8(2, 1);
+      message.writeUInt8(1, 2);
       message.writeUInt8(1, 2);
       parsedMessage = parser.parse(message);
     });

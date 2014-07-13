@@ -8,6 +8,7 @@ var constants = require('../lib/constants');
 var types = require('../lib/types');
 
 var messageTypes = constants.messageTypes;
+var returnCodes = constants.returnCodes;
 
 describe('sending', function() {
 
@@ -51,16 +52,53 @@ describe('sending', function() {
 
     });
 
-    describe('when the CONNECT FLAG of RESERVED is not zero', function(){
+    describe('when the CONNECT FLAG of RESERVED is not zero', function() {
 
       it('the server closes the client connection');
 
     });
 
+    describe('with Clean Session NOT set', function(){
+
+    });
+
     describe('with Clean Session set', function() {
 
-      it('returns a CONNACK message with Session Present set to false');
-      it('returns a CONNACK message with a zero return code');
+      it('returns a CONNACK message with Session Present set to false', function(done) {
+        var message = new types.ConnectMessage({
+          cleanSession : true 
+        });
+        client = net.connect({
+          port: port
+        }, function() {
+          client.on('data', function(data) {
+            var parser = new parsers.ConnAckMessageParser();
+            var connAck = parser.parse(data);
+            assert.equal(connAck.variableHeader.sessionPresent, false);
+            client.destroy();
+            done();
+          });
+          client.write(message.toBuffer());
+        });
+      });
+
+      it('returns a CONNACK message with a zero return code', function(done){
+        var message = new types.ConnectMessage({
+          cleanSession : true 
+        });
+        client = net.connect({
+          port: port
+        }, function() {
+          client.on('data', function(data) {
+            var parser = new parsers.ConnAckMessageParser();
+            var connAck = parser.parse(data);
+            assert.equal(connAck.variableHeader.returnCode, returnCodes.CONNECTION_ACCEPTED);
+            client.destroy();
+            done();
+          });
+          client.write(message.toBuffer());
+        });
+      });
 
     });
 
