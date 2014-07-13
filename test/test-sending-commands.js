@@ -5,6 +5,7 @@ var net = require('net');
 var thingamabob = require('../lib/thingamabob');
 var parsers = require('../lib/parsers');
 var constants = require('../lib/constants');
+var types = require('../lib/types');
 
 var messageTypes = constants.messageTypes;
 
@@ -79,36 +80,10 @@ describe('sending', function() {
 
     });
 
-    it('returns a CONNACK message  with an unacceptable protocol level', function(done) {
-
-      var protocolName = 'MQTT';
-      var input = new Buffer(8);
-      input.writeUInt8(1 | 16, 0);
-      input.writeUInt8(1, 1);
-      input.writeUInt16BE(protocolName.length, 2);
-      input.write(protocolName, 4);
-      client = net.connect({
-        port: port
-      }, function() {
-        client.on('data', function(data) {
-          var connAckMessageParser = new parsers.ConnAckMessageParser();
-          var message = connAckMessageParser.parse(data);
-          assert.equal(message.fixedHeader.messageType, messageTypes.CONNACK);
-          assert.equal(message.fixedHeader.remainingLength, 2);
-          client.destroy();
-          done();
-        });
-        client.write(input);
-      });
-    });
+    it('returns a CONNACK message  with an unacceptable protocol level');
 
     it('returns a CONNACK message', function(done) {
-      var protocolName = 'MQTT';
-      var input = new Buffer(8);
-      input.writeUInt8(1 | 16, 0);
-      input.writeUInt8(1, 1);
-      input.writeUInt16BE(protocolName.length, 2);
-      input.write(protocolName, 4);
+      var message = new types.ConnectMessage();
       client = net.connect({
         port: port
       }, function() {
@@ -120,7 +95,7 @@ describe('sending', function() {
           client.destroy();
           done();
         });
-        client.write(input);
+        client.write(message.toBuffer());
       });
     });
 
