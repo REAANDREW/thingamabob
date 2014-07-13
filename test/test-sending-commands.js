@@ -32,18 +32,16 @@ describe('sending', function() {
 
       it('the server closes the client connection', function(done) {
         var protocolName = 'PROT';
-        var input = new Buffer(8);
-        input.writeUInt8(1 | 16, 0);
-        input.writeUInt8(1, 1);
-        input.writeUInt16BE(protocolName.length, 2);
-        input.write(protocolName, 4);
+        var message = new thingamabob.ConnectMessage({
+          protocolName : protocolName 
+        });
         client = net.connect({
           port: port
         }, function() {
           client.on('end', function() {
             done();
           });
-          client.write(input);
+          client.write(message.toBuffer());
         });
       });
 
