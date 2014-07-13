@@ -51,6 +51,12 @@ describe('sending', function() {
 
     });
 
+    describe('when the CONNECT FLAG of RESERVED is not zero', function(){
+
+      it('the server closes the client connection');
+
+    });
+
     describe('with Clean Session set', function() {
 
       it('returns a CONNACK message with Session Present set to false');

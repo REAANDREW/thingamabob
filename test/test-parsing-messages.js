@@ -8,23 +8,52 @@ var constants = require('../lib/constants');
 describe('Parsing', function() {
   describe('CONNECT Messages', function() {
 
+    var protocolName;
+    var parser;
+    var input;
+    var parsedMessage;
+
+    beforeEach(function() {
+      protocolName = constants.PROTOCOL_NAME;
+      parser = new parsers.ConnectMessageParser();
+      input = new Buffer(10);
+      input.writeUInt8(16, 0);
+      input.writeUInt8(1, 1);
+      input.writeUInt16BE(protocolName.length, 2);
+      input.write(protocolName, 4);
+      input.writeUInt8(4, 8);
+      input.writeUInt8(2, 9);
+    });
+
+    it('parsesr the protocol level', function() {
+      parsedMessage = parser.parse(input);
+      assert.equal(parsedMessage.variableHeader.protocolLevel, 4);
+    });
+
+    describe('parses the Clean Session Flag', function() {
+      it('when true', function() {
+        parsedMessage = parser.parse(input);
+        assert.equal(parsedMessage.variableHeader.cleanSession, true);
+      });
+    });
+
   });
 
-  describe('CONNACK Messages', function(){
+  describe('CONNACK Messages', function() {
 
     var message;
     var parser;
     var parsedMessage;
 
-    beforeEach(function(){
+    beforeEach(function() {
       parser = new parsers.ConnAckMessageParser();
       message = new Buffer(4);
-      message.writeUInt8(1,2);
+      message.writeUInt8(1, 2);
       parsedMessage = parser.parse(message);
     });
 
-    it('parses the Session Present flag', function(){
-      assert.equal(parsedMessage.variableHeader.sessionPresent, true); 
+    it('parses the Session Present flag', function() {
+      assert.equal(parsedMessage.variableHeader.sessionPresent, true);
     });
 
   });
