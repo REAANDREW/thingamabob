@@ -54,11 +54,24 @@ describe('sending', function() {
 
     describe('when the CONNECT FLAG of RESERVED is not zero', function() {
 
-      it('the server closes the client connection');
+      it('the server closes the client connection', function(done) {
+        var message = new types.ConnectMessage();
+        var messageBytes = message.toBuffer();
+        //set the reserved flag on the CONNECT flags
+        messageBytes[messageBytes.length - 3] |= 1;
+        client = net.connect({
+          port: port
+        }, function() {
+          client.on('end', function() {
+            done();
+          });
+          client.write(messageBytes);
+        });
+      });
 
     });
 
-    describe('with Clean Session NOT set', function(){
+    describe('with Clean Session NOT set', function() {
 
     });
 
@@ -66,7 +79,7 @@ describe('sending', function() {
 
       it('returns a CONNACK message with Session Present set to false', function(done) {
         var message = new types.ConnectMessage({
-          cleanSession : true 
+          cleanSession: true
         });
         client = net.connect({
           port: port
@@ -82,9 +95,9 @@ describe('sending', function() {
         });
       });
 
-      it('returns a CONNACK message with a zero return code', function(done){
+      it('returns a CONNACK message with a zero return code', function(done) {
         var message = new types.ConnectMessage({
-          cleanSession : true 
+          cleanSession: true
         });
         client = net.connect({
           port: port

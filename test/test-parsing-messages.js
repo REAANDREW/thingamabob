@@ -16,30 +16,32 @@ describe('Parsing', function() {
     beforeEach(function() {
       protocolName = constants.PROTOCOL_NAME;
       parser = new parsers.ConnectMessageParser();
-      input = new Buffer(10);
+      input = new Buffer(12);
       input.writeUInt8(16, 0);
       input.writeUInt8(1, 1);
       input.writeUInt16BE(protocolName.length, 2);
       input.write(protocolName, 4);
       input.writeUInt8(4, 8);
       input.writeUInt8(2, 9);
+      input.writeUInt16BE(60, 10);
     });
 
     it('parsesr the protocol level', function() {
       parsedMessage = parser.parse(input);
-      assert.equal(parsedMessage.variableHeader.protocolLevel, 4);
+      assert.equal(parsedMessage.protocolLevel, 4);
     });
 
     describe('parses the Clean Session Flag', function() {
       it('when true', function() {
         parsedMessage = parser.parse(input);
-        assert.equal(parsedMessage.variableHeader.cleanSession, true);
+        console.log(parsedMessage);
+        assert.equal(parsedMessage.connectFlags.cleanSession, true);
       });
 
       it('when false', function() {
         input.writeUInt8(0, 9);
         parsedMessage = parser.parse(input);
-        assert.equal(parsedMessage.variableHeader.cleanSession, false);
+        assert.equal(parsedMessage.connectFlags.cleanSession, false);
       });
     });
 
