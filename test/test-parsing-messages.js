@@ -64,7 +64,7 @@ describe('Parsing', function() {
     });
 
     it('parses the Session Present flag', function() {
-      assert.equal(parsedMessage.variableHeader.sessionPresent, true);
+      assert.equal(parsedMessage.sessionPresent, true);
     });
 
   });

@@ -33,9 +33,9 @@ describe('sending', function() {
 
   describe('sending CONNECT command', function() {
 
-    describe('with a protocol name not equal to MQTT', function() {
+    describe('the server closes the connection', function() {
 
-      it('the server closes the client connection', function(done) {
+      it('when the protocol name is not equal to MQTT', function(done) {
         var protocolName = 'PROT';
         var message = new types.ConnectMessage({
           protocolName: protocolName
@@ -50,11 +50,7 @@ describe('sending', function() {
         });
       });
 
-    });
-
-    describe('when the CONNECT FLAG of RESERVED is not zero', function() {
-
-      it('the server closes the client connection', function(done) {
+      it('when the reserved flag is set on the connect flags', function(done) {
         var message = new types.ConnectMessage();
         var messageBytes = message.toBuffer();
         //set the reserved flag on the CONNECT flags
@@ -68,7 +64,6 @@ describe('sending', function() {
           client.write(messageBytes);
         });
       });
-
     });
 
     describe('with Clean Session NOT set', function() {
@@ -87,7 +82,7 @@ describe('sending', function() {
           client.on('data', function(data) {
             var parser = new parsers.ConnAckMessageParser();
             var connAck = parser.parse(data);
-            assert.equal(connAck.variableHeader.sessionPresent, false);
+            assert.equal(connAck.sessionPresent, false);
             client.destroy();
             done();
           });
@@ -105,7 +100,7 @@ describe('sending', function() {
           client.on('data', function(data) {
             var parser = new parsers.ConnAckMessageParser();
             var connAck = parser.parse(data);
-            assert.equal(connAck.variableHeader.returnCode, returnCodes.CONNECTION_ACCEPTED);
+            assert.equal(connAck.returnCode, returnCodes.CONNECTION_ACCEPTED);
             client.destroy();
             done();
           });
@@ -135,25 +130,40 @@ describe('sending', function() {
 
     });
 
-    it('returns a CONNACK message  with an unacceptable protocol level');
-
-    it('returns a CONNACK message', function(done) {
-      var message = new types.ConnectMessage();
+    it('returns a CONNACK message with invalid protocol level when the protocol level does not equal 4', function(done) {
+      var message = new types.ConnectMessage({
+        protocolVersion: 101
+      });
       client = net.connect({
         port: port
       }, function() {
         client.on('data', function(data) {
-          var fixedHeaderParser = new parsers.FixedHeaderParser();
-          var fixedHeader = fixedHeaderParser.parse(data);
-          assert.equal(fixedHeader.messageType, messageTypes.CONNACK);
-          assert.equal(fixedHeader.remainingLength, 2);
+          var messageParser = new parsers.ConnAckMessageParser();
+          var connackMessage = messageParser.parse(data);
+          assert.equal(connackMessage.returnCode,
+            constants.returnCodes.UNACCEPTABLE_PROTOCOL_LEVEL);
           client.destroy();
           done();
         });
         client.write(message.toBuffer());
       });
     });
-
   });
 
+  it('returns a CONNACK message', function(done) {
+    var message = new types.ConnectMessage();
+    client = net.connect({
+      port: port
+    }, function() {
+      client.on('data', function(data) {
+        var fixedHeaderParser = new parsers.FixedHeaderParser();
+        var fixedHeader = fixedHeaderParser.parse(data);
+        assert.equal(fixedHeader.messageType, messageTypes.CONNACK);
+        assert.equal(fixedHeader.remainingLength, 2);
+        client.destroy();
+        done();
+      });
+      client.write(message.toBuffer());
+    });
+  });
 });
