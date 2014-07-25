@@ -34,7 +34,6 @@ describe('Parsing', function() {
     describe('parses the Clean Session Flag', function() {
       it('when true', function() {
         parsedMessage = parser.parse(input);
-        console.log(parsedMessage);
         assert.equal(parsedMessage.connectFlags.cleanSession, true);
       });
 
@@ -43,6 +42,16 @@ describe('Parsing', function() {
         parsedMessage = parser.parse(input);
         assert.equal(parsedMessage.connectFlags.cleanSession, false);
       });
+    });
+
+    describe('parses the Will Flag', function() {
+
+      it('when true', function() {
+        input.writeUInt8(4, 9);
+        parsedMessage = parser.parse(input);
+        assert.equal(parsedMessage.connectFlags.will, true);
+      });
+
     });
 
   });

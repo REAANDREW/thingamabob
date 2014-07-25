@@ -31,7 +31,53 @@ describe('sending', function() {
     server.close(done);
   });
 
+  describe('starting a TCP session with the server', function() {
+
+    it('if the first packet sent is not a CONNECT message then the server closes the connection', function(done) {
+      var message = new types.ConnectMessage();
+      var messageBytes = message.toBuffer();
+
+      //change the message type
+      messageBytes[0] |= 32;
+
+      client = net.connect({
+        port: port
+      }, function() {
+        client.on('end', function() {
+          done();
+        });
+        client.write(messageBytes);
+      });
+    });
+
+  });
+
   describe('sending CONNECT command', function() {
+
+    describe('multiple times', function() {
+
+      it.skip('returns protocol violation response for the second CONNECT message', function(done) {
+        var responseCount = 0;
+        var message = new types.ConnectMessage();
+        client = net.connect({
+          port: port
+        }, function() {
+          client.on('data', function(data) {
+            responseCount++;
+            var messageParser = new parsers.ConnAckMessageParser();
+            var connackMessage = messageParser.parse(data);
+            if (connackMessage.returnCode === constants.returnCodes.UNACCEPTABLE_PROTOCOL_LEVEL &&
+              responseCount === 2) {
+              client.destroy();
+              done();
+            }
+          });
+          client.write(message.toBuffer());
+          client.write(message.toBuffer());
+        });
+      });
+
+    });
 
     describe('the server closes the connection', function() {
 
