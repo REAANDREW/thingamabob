@@ -57,26 +57,26 @@ describe('Parsing', function() {
     describe('parses the Will Qos', function(){
 
       it('when AT_MOST_ONCE', function(){
-        input.writeUInt8((constants.qualityOfService.AT_MOST_ONCE << 4),9);
+        input.writeUInt8((constants.qualityOfService.AT_MOST_ONCE << 3),9);
         parsedMessage = parser.parse(input);
         assert.equal(parsedMessage.connectFlags.qos, constants.qualityOfService.AT_MOST_ONCE);
       });
 
       it('when AT_LEAST_ONCE', function(){
-        input.writeUInt8((constants.qualityOfService.AT_LEAST_ONCE << 4),9);
+        input.writeUInt8((constants.qualityOfService.AT_LEAST_ONCE << 3),9);
         parsedMessage = parser.parse(input);
         assert.equal(parsedMessage.connectFlags.qos, constants.qualityOfService.AT_LEAST_ONCE);
       });
 
 
       it('when EXACTLY_ONCE', function(){
-        input.writeUInt8((constants.qualityOfService.EXACTLY_ONCE << 4),9);
+        input.writeUInt8((constants.qualityOfService.EXACTLY_ONCE << 3),9);
         parsedMessage = parser.parse(input);
         assert.equal(parsedMessage.connectFlags.qos, constants.qualityOfService.EXACTLY_ONCE);
       });
 
       it('when RESERVED', function(){
-        input.writeUInt8((constants.qualityOfService.RESERVED << 4),9);
+        input.writeUInt8((constants.qualityOfService.RESERVED << 3),9);
         parsedMessage = parser.parse(input);
         assert.equal(parsedMessage.connectFlags.qos, constants.qualityOfService.RESERVED);
       });

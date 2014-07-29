@@ -110,6 +110,21 @@ describe('sending', function() {
           client.write(messageBytes);
         });
       });
+
+      it('when the Will Flag is set to 0 and the Will QoS is not set to 0 _0x00_', function(done) {
+        var message = new types.ConnectMessage();
+        var messageBytes = message.toBuffer();
+        //set the reserved flag on the CONNECT flags
+        messageBytes[messageBytes.length - 3] |= 1;
+        client = net.connect({
+          port: port
+        }, function() {
+          client.on('end', function() {
+            done();
+          });
+          client.write(messageBytes);
+        });
+      });
     });
 
     describe('with Clean Session NOT set', function() {
