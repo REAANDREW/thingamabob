@@ -52,6 +52,10 @@ describe('Connect Message', function() {
       assert.equal(this.connectFlags.willQos, 0);
     });
 
+    it('the will retain to 0', function(){
+      assert.equal(this.connectFlags.willRetain, 0);
+    });
+
     shared.behavesLikeMqttMessage(constants.messageTypes.CONNECT);
   });
 
