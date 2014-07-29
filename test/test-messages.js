@@ -9,7 +9,13 @@ var shared = {
     it('has protocol version set', function() {
       var headers = this.message.headers;
       var variableHeader = headers.variable;
-      assert.equal(variableHeader.protocolVersion, constants.PROTOCOL_VERSION);
+      assert.equal(variableHeader.protocol.version, constants.protocol.version);
+    });
+
+    it('has protocol name set', function(){
+      var headers = this.message.headers;
+      var variableHeader = headers.variable;
+      assert.equal(variableHeader.protocol.name, constants.protocol.name);
     });
 
     it('has message type set', function() {
