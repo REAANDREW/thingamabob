@@ -29,12 +29,17 @@ describe('Connect Message', function() {
 
   before(function() {
     this.message = new types.ConnectMessage();
+    var headers = this.message.headers;
+    this.variableHeader = headers.variable;
+    this.connectFlags = this.variableHeader.connectFlags;
   });
 
   it('defaults the keepalive to 1 minute', function() {
-    var headers = this.message.headers;
-    var variableHeader = headers.variable;
-    assert.equal(variableHeader.keepAlive, 60);
+    assert.equal(this.variableHeader.keepAlive, 60);
+  });
+
+  it('defaults the clean session to 0', function(){
+    assert.equal(this.connectFlags.cleanSession, 0);
   });
 
   shared.behavesLikeMqttMessage(constants.messageTypes.CONNECT);
