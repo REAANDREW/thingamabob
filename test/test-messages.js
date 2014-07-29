@@ -12,7 +12,7 @@ var shared = {
       assert.equal(variableHeader.protocol.version, constants.protocol.version);
     });
 
-    it('has protocol name set', function(){
+    it('has protocol name set', function() {
       var headers = this.message.headers;
       var variableHeader = headers.variable;
       assert.equal(variableHeader.protocol.name, constants.protocol.name);
@@ -34,14 +34,25 @@ describe('Connect Message', function() {
     this.connectFlags = this.variableHeader.connectFlags;
   });
 
-  it('defaults the keepalive to 1 minute', function() {
-    assert.equal(this.variableHeader.keepAlive, 60);
-  });
+  describe('defaults', function() {
 
-  it('defaults the clean session to 0', function(){
-    assert.equal(this.connectFlags.cleanSession, 0);
-  });
+    it('the keepalive to 60 seconds', function() {
+      assert.equal(this.variableHeader.keepAlive, 60);
+    });
 
-  shared.behavesLikeMqttMessage(constants.messageTypes.CONNECT);
+    it('the clean session to 0', function() {
+      assert.equal(this.connectFlags.cleanSession, 0);
+    });
+
+    it('the will flag to 0', function() {
+      assert.equal(this.connectFlags.will, 0);
+    });
+
+    it('the will qos to 0', function(){
+      assert.equal(this.connectFlags.willQos, 0);
+    });
+
+    shared.behavesLikeMqttMessage(constants.messageTypes.CONNECT);
+  });
 
 });
