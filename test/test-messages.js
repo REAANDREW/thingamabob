@@ -48,12 +48,16 @@ describe('Connect Message', function() {
       assert.equal(this.connectFlags.will, 0);
     });
 
-    it('the will qos to 0', function(){
+    it('the will qos flag to 0', function(){
       assert.equal(this.connectFlags.willQos, 0);
     });
 
-    it('the will retain to 0', function(){
+    it('the will retain flag to 0', function(){
       assert.equal(this.connectFlags.willRetain, 0);
+    });
+
+    it('the username flag to 0', function(){
+      assert.equal(this.connectFlags.username, 0);
     });
 
     shared.behavesLikeMqttMessage(constants.messageTypes.CONNECT);
