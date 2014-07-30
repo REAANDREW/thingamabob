@@ -35,7 +35,6 @@ describe('Connect Message', function() {
   });
 
   describe('defaults', function() {
-
     it('the keepalive to 60 seconds', function() {
       assert.equal(this.variableHeader.keepAlive, 60);
     });
@@ -60,7 +59,17 @@ describe('Connect Message', function() {
       assert.equal(this.connectFlags.username, 0);
     });
 
+    it('the password flag to 0', function(){
+      assert.equal(this.connectFlags.password, 0);
+    });
+
     shared.behavesLikeMqttMessage(constants.messageTypes.CONNECT);
+  });
+
+  it('with ClientId', function(){
+    var clientId = 'something';
+    this.message.withClientId(clientId);
+    assert.equal(this.message.payload.client.id, clientId);
   });
 
 });
