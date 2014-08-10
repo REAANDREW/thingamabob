@@ -31,9 +31,9 @@ function dispatch() {
 function encodeRemainingLength(value) {
 
     var dispatcher = dispatch(validateRemainingLength, encode);
-    
+
     return dispatcher(value);
-    
+
     function encode(value) {
         var buffer = new Buffer(0);
         do {
@@ -59,7 +59,7 @@ function decodeRemainingLength(buffer) {
     var digit;
     do {
         if (index === buffer.length)
-            throw Error('malformed remaining length')
+            return Error('malformed remaining length')
         digit = buffer.readUInt8(index++);
         value += (digit & 127) * multiplier;
         multiplier *= 128;
@@ -72,7 +72,7 @@ function remainingLengthByteCount(value) {
     var dispatcher = dispatch(validateRemainingLength, count);
     return dispatcher(value);
 
-    function count(value){
+    function count(value) {
         return Math.ceil(Math.log(value) / Math.log(128));
     }
 }
@@ -107,7 +107,7 @@ describe('MQTT Special Functions', function() {
 
         it('encoding a number greater than 128x128x128x127 throws an error', function() {
             var error = encodeRemainingLength(128 * 128 * 128 * 128);
-            assert.equal(error.message,'max message length exceeded');
+            assert.equal(error.message, 'max message length exceeded');
         });
     });
 
@@ -144,9 +144,8 @@ describe('MQTT Special Functions', function() {
         });
 
         it('decoding a buffer greater than the four byte upper limit throws an error', function() {
-            assert.throws(function() {
-                decodeRemainingLength(new Buffer([0xFF, 0xFF, 0xFF, 0xFF]))
-            }, /malformed remaining length/);
+            var error = decodeRemainingLength(new Buffer([0xFF, 0xFF, 0xFF, 0xFF]))
+            assert.equal(error.message, 'malformed remaining length');
         });
 
         it('remainingLengthByteCount returns 1', function() {
