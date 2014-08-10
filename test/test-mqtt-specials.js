@@ -30,6 +30,8 @@ function decodeRemainingLength(buffer) {
     var index = 0;
     var digit;
     do {
+        if (index === buffer.length)
+            throw Error('malformed remaining length')
         digit = buffer.readUInt8(index++);
         value += (digit & 127) * multiplier;
         multiplier *= 128;
@@ -99,9 +101,15 @@ describe('MQTT Special Functions', function() {
             expectDecoding([0xFF, 0xFF, 0x7F], threeByteUpperLimit);
         });
 
-        it('decodes 0xFF oxFF 0xFF 0x7F as four byte upper limit', function(){
+        it('decodes 0xFF 0xFF 0xFF 0x7F as four byte upper limit', function(){
             var fourByteUpperLimit = 128*128*128*128-1;
             expectDecoding([0xFF,0xFF,0xFF,0x7F], fourByteUpperLimit);
+        });
+
+        it('decoding a buffer greater than the four byte upper limit throws an error', function(){
+            assert.throws(function(){
+               decodeRemainingLength(new Buffer([0xFF, 0xFF, 0xFF, 0xFF]))
+            }, /malformed remaining length/);
         });
     });
 
