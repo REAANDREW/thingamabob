@@ -1,6 +1,5 @@
 var assert = require('assert');
 
-
 function validateRemainingLength(value) {
     var maxMessageLength = 268435455;
     if (value > maxMessageLength) {
@@ -145,7 +144,7 @@ describe('MQTT Special Functions', function() {
 
         it('decoding a buffer greater than the four byte upper limit throws an error', function() {
             var error = decodeRemainingLength(new Buffer([0xFF, 0xFF, 0xFF, 0xFF]))
-            assert.equal(error.message, 'malformed remaining length');
+assert.equal(error.message, 'malformed remaining length');
         });
 
         it('remainingLengthByteCount returns 1', function() {
