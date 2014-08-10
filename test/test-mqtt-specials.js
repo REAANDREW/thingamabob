@@ -1,12 +1,12 @@
 var assert = require('assert');
 
 var constraints = {
-    maxMessageLength : 268435455
+    maxMessageLength: 268435455
 };
 
 function encodeRemainingLength(value) {
 
-    if(value > constraints.maxMessageLength){
+    if (value > constraints.maxMessageLength) {
         throw new Error('max message length exceeded');
     }
     var buffer = new Buffer(0);
@@ -22,6 +22,20 @@ function encodeRemainingLength(value) {
     }
     while (value > 0);
     return buffer;
+}
+
+function decodeRemainingLength(buffer) {
+    var multiplier = 1;
+    var value = 0;
+    var index = 0;
+    var digit;
+    do {
+        digit = buffer.readUInt8(index++);
+        value += (digit & 127) * multiplier;
+        multiplier *= 128;
+    }
+    while ((digit & 128) !== 0);
+    return value;
 }
 
 describe('MQTT Special Functions', function() {
@@ -53,9 +67,41 @@ describe('MQTT Special Functions', function() {
         });
 
         it('encoding a number greater than 128x128x128x127 throws an error', function() {
-            assert.throws(function(){
-                encodeRemainingLength(128*128*128*128);
+            assert.throws(function() {
+                encodeRemainingLength(128 * 128 * 128 * 128);
             }, /max message length exceeded/);
+        });
+    });
+
+    describe('Decoding remaining length', function() {
+
+        function expectDecoding(value, expectedValue) {
+            var buffer = new Buffer(value.length);
+            for (var i = 0; i < value.length; i++) {
+                buffer.writeUInt8(value[i], i);
+            }
+            var result = decodeRemainingLength(buffer);
+            assert.equal(result, expectedValue);
+        }
+
+        it('decodes 0x7F as one byte upper limit', function() {
+            var oneByteUpperLimit = 128 - 1;
+            expectDecoding([0x7F], oneByteUpperLimit);
+        });
+
+        it('decodes 0xFF 0x7F as two byte upper limit', function() {
+            var twoByteUpperLimit = 128 * 128 - 1;
+            expectDecoding([0xFF, 0x7F], twoByteUpperLimit);
+        });
+
+        it('decodes 0xFF 0xFF 0x7F as three byte upper limit', function() {
+            var threeByteUpperLimit = 128 * 128 * 128 - 1;
+            expectDecoding([0xFF, 0xFF, 0x7F], threeByteUpperLimit);
+        });
+
+        it('decodes 0xFF oxFF 0xFF 0x7F as four byte upper limit', function(){
+            var fourByteUpperLimit = 128*128*128*128-1;
+            expectDecoding([0xFF,0xFF,0xFF,0x7F], fourByteUpperLimit);
         });
     });
 
