@@ -11,7 +11,7 @@ describe('MQTT Special Functions', function() {
     describe('Encoding remaining length', function() {
 
         function expectEncoding(value, expectedValues) {
-            var result = services.encodeRemainingLength(value);
+            var result = services.remainingLength.encode(value);
             assert.equal(result.length, expectedValues.length);
             for (var i = 0; i < expectedValues.length; i++) {
                 assert.equal(result.readUInt8(i), expectedValues[i]);
@@ -35,7 +35,7 @@ describe('MQTT Special Functions', function() {
         });
 
         it('encoding a number greater than four byte upper limit throws an error', function() {
-            var error = services.encodeRemainingLength(fourByteUpperLimit + 1);
+            var error = services.remainingLength.encode(fourByteUpperLimit + 1);
             assert.equal(error.message, 'max message length exceeded');
         });
     });
@@ -48,7 +48,7 @@ describe('MQTT Special Functions', function() {
             for (var i = 0; i < value.length; i++) {
                 buffer.writeUInt8(value[i], i);
             }
-            var result = services.decodeRemainingLength(buffer);
+            var result = services.remainingLength.decode(buffer);
             assert.equal(result, expectedValue);
         }
 
@@ -69,28 +69,28 @@ describe('MQTT Special Functions', function() {
         });
 
         it('decoding a buffer greater than the four byte upper limit throws an error', function() {
-            var error = services.decodeRemainingLength(new Buffer([0xFF, 0xFF, 0xFF, 0xFF]))
+            var error = services.remainingLength.decode(new Buffer([0xFF, 0xFF, 0xFF, 0xFF]))
             assert.equal(error.message, 'malformed remaining length');
         });
 
-        it('remainingLengthByteCount returns 1', function() {
-            assert.equal(1, services.remainingLengthByteCount(oneByteUpperLimit));
+        it('remainingLength.byteCount returns 1', function() {
+            assert.equal(1, services.remainingLength.byteCount(oneByteUpperLimit));
         });
 
         it('remainLengthByteCount returns 2', function() {
-            assert.equal(2, services.remainingLengthByteCount(twoByteUpperLimit));
+            assert.equal(2, services.remainingLength.byteCount(twoByteUpperLimit));
         });
 
-        it('remainingLengthByteCount returns 2', function() {
-            assert.equal(3, services.remainingLengthByteCount(threeByteUpperLimit));
+        it('remainingLength.byteCount returns 2', function() {
+            assert.equal(3, services.remainingLength.byteCount(threeByteUpperLimit));
         });
 
-        it('remainingLengthByteCount returns 4', function() {
-            assert.equal(4, services.remainingLengthByteCount(fourByteUpperLimit));
+        it('remainingLength.byteCount returns 4', function() {
+            assert.equal(4, services.remainingLength.byteCount(fourByteUpperLimit));
         });
 
-        it('remainingLengthByteCount returns error when number is greater than fourByteUpperLimit', function() {
-            assert.ok(services.remainingLengthByteCount(fourByteUpperLimit + 1) instanceof Error);
+        it('remainingLength.byteCount returns error when number is greater than fourByteUpperLimit', function() {
+            assert.ok(services.remainingLength.byteCount(fourByteUpperLimit + 1) instanceof Error);
         });
     });
 
