@@ -49,7 +49,6 @@ describe('Parsing a Connect Message', function() {
 
       it('parses when the remaining lenth is 127', function(){
         var buffer = new Buffer(1);
-        
       });
 
   });

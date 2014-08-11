@@ -3,10 +3,10 @@ var services = require('../lib/services');
 
 describe('MQTT Special Functions', function() {
 
-    var oneByteUpperLimit = 128 - 1;
-    var twoByteUpperLimit = 128 * 128 - 1;
-    var threeByteUpperLimit = 128 * 128 * 128 - 1;
-    var fourByteUpperLimit = 128 * 128 * 128 * 128 - 1;
+    var oneByteUpperLimit = services.remainingLength.upperLimit(1);
+    var twoByteUpperLimit = services.remainingLength.upperLimit(2);
+    var threeByteUpperLimit = services.remainingLength.upperLimit(3);
+    var fourByteUpperLimit = services.remainingLength.upperLimit(4);
 
     describe('Encoding remaining length', function() {
 
