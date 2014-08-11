@@ -1,6 +1,10 @@
 var assert = require('assert');
 var services = require('../lib/services');
 
+function assertEquivalent(obj1, obj2) {
+    assert.equal(JSON.stringify(obj1), JSON.stringify(obj2));
+}
+
 describe('MQTT Special Functions', function() {
 
     var oneByteUpperLimit = services.remainingLength.upperLimit(1);
@@ -9,7 +13,6 @@ describe('MQTT Special Functions', function() {
     var fourByteUpperLimit = services.remainingLength.upperLimit(4);
 
     describe('Encoding remaining length', function() {
-
         function expectEncoding(value, expectedValues) {
             var result = services.remainingLength.encode(value);
             assert.equal(result.length, expectedValues.length);
@@ -41,8 +44,6 @@ describe('MQTT Special Functions', function() {
     });
 
     describe('Decoding remaining length', function() {
-
-
         function expectDecoding(value, expectedValue) {
             var buffer = new Buffer(value.length);
             for (var i = 0; i < value.length; i++) {
@@ -94,4 +95,29 @@ describe('MQTT Special Functions', function() {
         });
     });
 
+    describe('Remaining Length Byte Reader', function() {
+
+        function find(expected) {
+            var buffer = new Buffer([0x01].concat(expected));
+            var actual = services.remainingLength.readBytes(buffer);
+            assertEquivalent(actual, expected);
+        }
+
+        it('finds a single byte', function() {
+            find([0x7F]);
+        });
+
+        it('finds two bytes', function() {
+            find([0xFF,0x7F]);
+        });
+
+        it('finds three bytes', function(){
+            find([0xFF,0xFF,0x7F]);
+        });
+
+        it('find four bytes', function(){
+            find([0xFF,0xFF,0xFF,0x7F]);
+        });
+
+    });
 });
