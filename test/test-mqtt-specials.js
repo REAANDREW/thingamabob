@@ -1,3 +1,5 @@
+'use strict';
+
 var assert = require('assert');
 var services = require('../lib/services');
 
@@ -70,7 +72,7 @@ describe('MQTT Special Functions', function() {
         });
 
         it('decoding a buffer greater than the four byte upper limit throws an error', function() {
-            var error = services.remainingLength.decode(new Buffer([0xFF, 0xFF, 0xFF, 0xFF]))
+            var error = services.remainingLength.decode(new Buffer([0xFF, 0xFF, 0xFF, 0xFF]));
             assert.equal(error.message, 'malformed remaining length');
         });
 
@@ -78,11 +80,11 @@ describe('MQTT Special Functions', function() {
             assert.equal(1, services.remainingLength.byteCount(oneByteUpperLimit));
         });
 
-        it('remainLengthByteCount returns 2', function() {
+        it('remainingLength.byteCount returns 2', function() {
             assert.equal(2, services.remainingLength.byteCount(twoByteUpperLimit));
         });
 
-        it('remainingLength.byteCount returns 2', function() {
+        it('remainingLength.byteCount returns 3', function() {
             assert.equal(3, services.remainingLength.byteCount(threeByteUpperLimit));
         });
 
