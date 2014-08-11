@@ -78,6 +78,11 @@ function remainingLengthByteCount(value) {
 
 describe('MQTT Special Functions', function() {
 
+    var oneByteUpperLimit = 128 - 1;
+    var twoByteUpperLimit = 128 * 128 - 1;
+    var threeByteUpperLimit = 128 * 128 * 128 - 1;
+    var fourByteUpperLimit = 128 * 128 * 128 * 128 - 1;
+
     describe('Encoding remaining length', function() {
 
         function expectEncoding(value, expectedValues) {
@@ -88,34 +93,30 @@ describe('MQTT Special Functions', function() {
             }
         }
 
-        it('encoding 127 returns a 1 byte Buffer', function() {
-            expectEncoding(127, [0x7F]);
+        it('encoding up to one byte upper limit returns a 1 byte Buffer', function() {
+            expectEncoding(oneByteUpperLimit, [0x7F]);
         });
 
-        it('encoding 128 x 127 returns a 2 byte Buffer', function() {
-            expectEncoding(128 * 127, [0xFF, 0x7F]);
+        it('encoding up to two byte upper limit returns a 2 byte Buffer', function() {
+            expectEncoding(twoByteUpperLimit, [0xFF, 0x7F]);
         });
 
-        it('encoding 128 x 128 x 127 returns a 3 byte Buffer', function() {
-            expectEncoding(128 * 128 * 127, [0xFF, 0xFF, 0x7F]);
+        it('encoding up to three byte upper limit returns a 3 byte Buffer', function() {
+            expectEncoding(threeByteUpperLimit, [0xFF, 0xFF, 0x7F]);
         });
 
-        it('encoding 128 x 128 x 128 x 127 returns a 4 byte Buffer', function() {
-            expectEncoding(128 * 128 * 128 * 127, [0xFF, 0xFF, 0xFF, 0x7F]);
+        it('encoding up to four byte upper limit returns a 4 byte Buffer', function() {
+            expectEncoding(fourByteUpperLimit, [0xFF, 0xFF, 0xFF, 0x7F]);
         });
 
-        it('encoding a number greater than 128x128x128x127 throws an error', function() {
-            var error = encodeRemainingLength(128 * 128 * 128 * 128);
+        it('encoding a number greater than four byte upper limit throws an error', function() {
+            var error = encodeRemainingLength(fourByteUpperLimit+1);
             assert.equal(error.message, 'max message length exceeded');
         });
     });
 
     describe('Decoding remaining length', function() {
 
-        var oneByteUpperLimit = 128 - 1;
-        var twoByteUpperLimit = 128 * 128 - 1;
-        var threeByteUpperLimit = 128 * 128 * 128 - 1;
-        var fourByteUpperLimit = 128 * 128 * 128 * 128 - 1;
 
         function expectDecoding(value, expectedValue) {
             var buffer = new Buffer(value.length);
@@ -144,7 +145,7 @@ describe('MQTT Special Functions', function() {
 
         it('decoding a buffer greater than the four byte upper limit throws an error', function() {
             var error = decodeRemainingLength(new Buffer([0xFF, 0xFF, 0xFF, 0xFF]))
-assert.equal(error.message, 'malformed remaining length');
+            assert.equal(error.message, 'malformed remaining length');
         });
 
         it('remainingLengthByteCount returns 1', function() {
