@@ -118,6 +118,9 @@ describe.skip('sending', function() {
                 client = net.connect({
                     port: port
                 }, function() {
+                    client.on('data', function(){
+                        done(new Error('should not have received any data'));
+                    });
                     client.on('end', function() {
                         done();
                     });
