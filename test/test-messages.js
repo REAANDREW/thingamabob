@@ -1,75 +1,133 @@
 'use strict';
 
 var assert = require('assert');
-var types = require('../lib/types');
 var constants = require('../lib/constants');
+var services = require('../lib/services');
 
-var shared = {
-  behavesLikeMqttMessage: function(messageType) {
-    it('has protocol version set', function() {
-      var headers = this.message.headers;
-      var variableHeader = headers.variable;
-      assert.equal(variableHeader.protocol.version, constants.protocol.version);
-    });
-
-    it('has protocol name set', function() {
-      var headers = this.message.headers;
-      var variableHeader = headers.variable;
-      assert.equal(variableHeader.protocol.name, constants.protocol.name);
-    });
-
-    it('has message type set', function() {
-      var headers = this.message.headers;
-      assert.equal(headers.fixed.messageType, messageType);
-    });
-  }
+function parseRemainingLength(buffer) {
+    var bytes = services.remainingLength.readBytes(buffer);
+    return services.remainingLength.decode(bytes);
 }
 
-describe('Connect Message', function() {
 
-  before(function() {
-    this.message = new types.ConnectMessage();
-    var headers = this.message.headers;
-    this.variableHeader = headers.variable;
-    this.connectFlags = this.variableHeader.connectFlags;
-  });
+function parse(buffer) {
+    var message = {};
+    message.type = (buffer.readUInt8(0) & 16) >> 4;
+    message.headers = {};
+    message.headers.fixed = {};
+    message.headers.fixed.remainingLength = parseRemainingLength(buffer);
+    return message;
+}
 
-  describe('defaults', function() {
-    it('the keepalive to 60 seconds', function() {
-      assert.equal(this.variableHeader.keepAlive, 60);
+var TCPPORT = 8124;
+
+function startTCP(callback) {
+    var net = require('net');
+
+    var server = net.createServer(function(socket) {
+
+        console.log("Connection from " + socket.remoteAddress);
+        socket.on('data', function(chunk) {
+            var message = parse(chunk);
+            socket.write(new Buffer(JSON.stringify(message)));
+        });
+
     });
 
-    it('the clean session to 0', function() {
-      assert.equal(this.connectFlags.cleanSession, 0);
+    server.listen(TCPPORT, "localhost", callback);
+    return server;
+}
+
+function parseProxy(buffer, callback) {
+    var net = require('net');
+    var client = net.connect({
+            port: TCPPORT
+        },
+        function() {
+            console.log('client connected');
+            client.write(buffer);
+        });
+    client.on('data', function(data) {
+        console.log(data.toString());
+        callback(null, JSON.parse(data.toString()));
+        client.end();
+    });
+}
+
+function parseConnectMessage(buffer, callback) {
+    parseProxy(buffer, callback);
+}
+
+describe('Parsing a Connect Message', function() {
+
+    function message() {
+        var messageBuffer = new Buffer(0);
+
+        function add(buffer) {
+            messageBuffer = Buffer.concat([messageBuffer, buffer]);
+        }
+
+        return {
+            withMessageType: function(type) {
+                var buffer = new Buffer(1);
+                buffer.writeUInt8(type << 4, 0);
+                add(buffer);
+                return this;
+            },
+            withRemainingLength: function(value) {
+                var buffer = new Buffer(services.remainingLength.encode(value));
+                add(buffer);
+                return this;
+            },
+            buffer: function() {
+                return messageBuffer;
+            }
+        };
+    }
+
+    var subject, tcpServer;
+
+    before(function(done) {
+
+        tcpServer = startTCP(done);
     });
 
-    it('the will flag to 0', function() {
-      assert.equal(this.connectFlags.will, 0);
+    after(function(done) {
+        tcpServer.close(done);
     });
 
-    it('the will qos flag to 0', function(){
-      assert.equal(this.connectFlags.willQos, 0);
+    beforeEach(function() {
+        subject = message()
+            .withMessageType(constants.messageTypes.CONNECT);
     });
 
-    it('the will retain flag to 0', function(){
-      assert.equal(this.connectFlags.willRetain, 0);
+    it('parses the message type', function(done) {
+        parseConnectMessage(subject.buffer(), function(err, message) {
+            assert.equal(message.type, constants.messageTypes.CONNECT);
+            done();
+        });
     });
 
-    it('the username flag to 0', function(){
-      assert.equal(this.connectFlags.username, 0);
+    describe('parsing the remaining length', function() {
+
+        function assertRemainingLength(number) {
+            var remainingLength = services.remainingLength.upperLimit(number);
+            var buffer = subject.withRemainingLength(remainingLength).buffer();
+            parseConnectMessage(buffer, function(err, message) {
+                var headers = message.headers;
+                assert.equal(headers.fixed.remainingLength, remainingLength);
+            });
+        }
+        var lengths = [1, 2, 3, 4];
+
+        lengths.map(function(length) {
+            it('parses when the remaining length is the ' + length + ' byte upper limit', function() {
+                assertRemainingLength(length);
+            });
+        });
+
+        it('goes BOOM when the remaining length is 5 or more bytes');
+
     });
-
-    it('the password flag to 0', function(){
-      assert.equal(this.connectFlags.password, 0);
-    });
-
-    shared.behavesLikeMqttMessage(constants.messageTypes.CONNECT);
-  });
-
-  it('with ClientId', function(){
-    var clientId = 'something';
-    this.message.withClientId(clientId);
-    assert.equal(this.message.payload.client.id, clientId);
-  });
 
 });
