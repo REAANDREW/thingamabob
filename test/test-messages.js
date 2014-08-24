@@ -31,11 +31,18 @@ function parse(buffer) {
     message.type = (buffer.readUInt8(0) & 16) >> 4;
     message.headers = {};
     message.headers.fixed = {};
+    message.headers.variable = {};
+    message.headers.variable.protocol = {};
     var remainingLengthResult = parseRemainingLength(buffer);
     if (remainingLengthResult instanceof Error) {
         return errorCodes.connect.malformedRemainingLength;
     }
     message.headers.fixed.remainingLength = remainingLengthResult;
+
+    var index = 1 + services.remainingLength.byteCount(remainingLengthResult);
+    var protocolName = parseMqttUtfString(buffer, index);
+    message.headers.variable.protocol.name = protocolName;
+
     return okResult(message);
 }
 
@@ -121,11 +128,12 @@ describe('MQTT UTF-8 string', function() {
 describe('Parsing a Connect Message', function() {
 
     function message() {
-        var buffers = new Array(2);
+        var buffers = new Array(3);
 
         var self = {
             withMessageType: withMessageType,
             withRemainingLength: withRemainingLength,
+            withProtocolName : withProtocolName,
             buffer: buffer
         };
 
@@ -142,6 +150,12 @@ describe('Parsing a Connect Message', function() {
             return self;
         }
 
+        function withProtocolName(value){
+            var encodedValue = encodeMqttUtfString(value);
+            buffers[2] = encodedValue;
+            return self;
+        }
+
         function buffer() {
             var messageBuffer = new Buffer(0);
             for (var index = 0; index < buffers.length; index++) {
@@ -152,7 +166,8 @@ describe('Parsing a Connect Message', function() {
 
         (function initialize() {
             withMessageType(constants.messageTypes.CONNECT)
-                .withRemainingLength(services.remainingLength.upperLimit(1));
+                .withRemainingLength(services.remainingLength.upperLimit(1))
+                .withProtocolName(constants.protocol.name);
         })();
 
         return self;
@@ -208,6 +223,19 @@ describe('Parsing a Connect Message', function() {
         });
     });
 
+    describe('parsing the variable header', function() {
 
+        beforeEach(function() {
+            subject = subject.withProtocolName('MQTT');
+        });
+
+        it('parses the protocol name', function(done) {
+            parseConnectMessage(subject.buffer(), function(err, message) {
+                var headers = message.headers;
+                headers.variable.protocol.name.should.eql(constants.protocol.name);
+                done();
+            });
+        });
+    });
 
 });
