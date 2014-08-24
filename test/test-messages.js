@@ -26,13 +26,21 @@ function okResult(payload) {
     };
 }
 
-function parse(buffer) {
+function defaultConnectMessage(){
     var message = {};
-    message.type = (buffer.readUInt8(0) & 16) >> 4;
+    message.type = constants.messageTypes.CONNECT;
     message.headers = {};
     message.headers.fixed = {};
     message.headers.variable = {};
     message.headers.variable.protocol = {};
+    message.payload = {};
+    message.payload.client = {};
+    return message;
+}
+
+function parseConnectPacket(buffer) {
+    var  message = defaultConnectMessage();
+    message.type = (buffer.readUInt8(0) & 16) >> 4;
     var remainingLengthResult = parseRemainingLength(buffer);
     if (remainingLengthResult instanceof Error) {
         return errorCodes.connect.malformedRemainingLength;
@@ -54,6 +62,11 @@ function parse(buffer) {
 
     var keepAlive = buffer.readUInt16BE(index);
     message.headers.variable.keepAlive = keepAlive;
+    index += 2;
+
+    var clientIdentifier = decodeMqttUtfString(buffer, index);
+    message.payload.client.id = clientIdentifier.value;
+    index += clientIdentifier.totalByteCount;
 
     return okResult(message);
 }
@@ -66,7 +79,7 @@ function startTCP(callback) {
     var server = net.createServer(function(socket) {
 
         socket.on('data', function(chunk) {
-            var message = parse(chunk);
+            var message = parseConnectPacket(chunk);
             socket.write(new Buffer(JSON.stringify(message)));
         });
 
@@ -230,7 +243,7 @@ describe('MQTT UTF-8 string', function() {
 describe('Parsing a Connect Message', function() {
 
     function message() {
-        var buffers = new Array(6);
+        var buffers = new Array(7);
 
         var self = {
             withMessageType: withMessageType,
@@ -239,6 +252,7 @@ describe('Parsing a Connect Message', function() {
             withProtocolVersion: withProtocolVersion,
             withConnectFlags: withConnectFlags,
             withKeepAlive: withKeepAlive,
+            withClientIdentifier: withClientIdentifier,
             buffer: buffer
         };
 
@@ -298,6 +312,12 @@ describe('Parsing a Connect Message', function() {
             return self;
         }
 
+        function withClientIdentifier(value) {
+            var encodedValue = encodeMqttUtfString(value);
+            buffers[6] = encodedValue;
+            return self;
+        }
+
         function buffer() {
             var messageBuffer = new Buffer(0);
             for (var index = 0; index < buffers.length; index++) {
@@ -312,7 +332,8 @@ describe('Parsing a Connect Message', function() {
                 .withProtocolName(constants.protocol.name)
                 .withProtocolVersion(constants.protocol.version)
                 .withConnectFlags({})
-                .withKeepAlive(60);
+                .withKeepAlive(60)
+                .withClientIdentifier('clientABC');
         })();
 
         return self;
@@ -369,7 +390,6 @@ describe('Parsing a Connect Message', function() {
     });
 
     describe('parsing the variable header', function() {
-
         beforeEach(function() {
             subject = subject.withProtocolName('MQTT')
                 .withProtocolVersion(4)
@@ -490,6 +510,20 @@ describe('Parsing a Connect Message', function() {
                 done();
             });
         });
+    });
+
+    describe('parsing the client identifier', function() {
+
+        it('parses', function(done) {
+            var expectedIdentifier = 'someIdentifier';
+            subject = subject.withClientIdentifier(expectedIdentifier);
+
+            parseConnectMessage(subject.buffer(), function(err, message) {
+                message.payload.client.id.should.eql(expectedIdentifier);
+                done();
+            });
+        });
+
     });
 
 });
