@@ -11,7 +11,7 @@ var errorCodes = {
             statusMessage: 'the remaining length should be between 1 and 4 bytes long inclusive'
         }
     }
-}
+};
 
 function parseRemainingLength(buffer) {
     var bytes = services.remainingLength.readBytes(buffer);
@@ -23,7 +23,7 @@ function okResult(payload) {
         statusCode: 0,
         statusMessage: 'OK',
         payload: payload
-    }
+    };
 }
 
 function parse(buffer) {
@@ -40,8 +40,12 @@ function parse(buffer) {
     message.headers.fixed.remainingLength = remainingLengthResult;
 
     var index = 1 + services.remainingLength.byteCount(remainingLengthResult);
-    var protocolName = parseMqttUtfString(buffer, index);
-    message.headers.variable.protocol.name = protocolName;
+    var protocolName = decodeMqttUtfString(buffer, index);
+    message.headers.variable.protocol.name = protocolName.value;
+    index += protocolName.totalByteCount;
+    
+    var protocolVersion = buffer.readUInt8(index);
+    message.headers.variable.protocol.version = protocolVersion;
 
     return okResult(message);
 }
@@ -73,8 +77,8 @@ function parseProxy(buffer, callback) {
             client.write(buffer);
         });
     client.on('data', function(data) {
-        var data = JSON.parse(data.toString());
-        if (data.statusCode != 0) {
+        data = JSON.parse(data.toString());
+        if (data.statusCode !== 0) {
             callback(data, null);
         } else {
             callback(null, data.payload);
@@ -87,11 +91,15 @@ function parseConnectMessage(buffer, callback) {
     parseProxy(buffer, callback);
 }
 
-function parseMqttUtfString(buffer, offset) {
+function decodeMqttUtfString(buffer, offset) {
     var length = buffer.readUInt16BE(offset);
     var start = offset + 2;
     var end = start + length;
-    return buffer.toString('utf8', start, end);
+    return {
+        value: buffer.toString('utf8', start, end),
+        byteCount: length,
+        totalByteCount: length + 2
+    };
 }
 
 function encodeMqttUtfString(value) {
@@ -110,8 +118,10 @@ describe('MQTT UTF-8 string', function() {
         sizeBuffer.writeUInt16BE(utf8Char.length, 0);
         var mqttUtfBuffer = Buffer.concat([sizeBuffer, new Buffer(utf8Char)]);
 
-        var result = parseMqttUtfString(mqttUtfBuffer, 0);
-        result.should.eql(euro.toString('utf8'));
+        var result = decodeMqttUtfString(mqttUtfBuffer, 0);
+        result.value.should.eql(euro.toString('utf8'));
+        result.byteCount.should.eql(3);
+        result.totalByteCount.should.eql(5);
     });
 
     it('encoding', function() {
@@ -128,12 +138,13 @@ describe('MQTT UTF-8 string', function() {
 describe('Parsing a Connect Message', function() {
 
     function message() {
-        var buffers = new Array(3);
+        var buffers = new Array(4);
 
         var self = {
             withMessageType: withMessageType,
             withRemainingLength: withRemainingLength,
-            withProtocolName : withProtocolName,
+            withProtocolName: withProtocolName,
+            withProtocolVersion: withProtocolVersion,
             buffer: buffer
         };
 
@@ -150,9 +161,16 @@ describe('Parsing a Connect Message', function() {
             return self;
         }
 
-        function withProtocolName(value){
+        function withProtocolName(value) {
             var encodedValue = encodeMqttUtfString(value);
             buffers[2] = encodedValue;
+            return self;
+        }
+
+        function withProtocolVersion(value) {
+            var buffer = new Buffer(1);
+            buffer.writeUInt8(value, 0);
+            buffers[3] = buffer;
             return self;
         }
 
@@ -167,7 +185,8 @@ describe('Parsing a Connect Message', function() {
         (function initialize() {
             withMessageType(constants.messageTypes.CONNECT)
                 .withRemainingLength(services.remainingLength.upperLimit(1))
-                .withProtocolName(constants.protocol.name);
+                .withProtocolName(constants.protocol.name)
+                .withProtocolVersion(constants.protocol.version);
         })();
 
         return self;
@@ -216,9 +235,9 @@ describe('Parsing a Connect Message', function() {
         it('return malformedRemainingLength code when the remaining length is 5 or more bytes', function() {
             var remainingLength = services.remainingLength.upperLimit(5);
             var buffer = subject.withRemainingLength(remainingLength).buffer();
-            parseConnectMessage(buffer, function(err, message) {
+            parseConnectMessage(buffer, function(err) {
                 should.exist(err);
-                err.should.eql(errorCodes.connect.malformedRemainingLength)
+                err.should.eql(errorCodes.connect.malformedRemainingLength);
             });
         });
     });
@@ -226,13 +245,22 @@ describe('Parsing a Connect Message', function() {
     describe('parsing the variable header', function() {
 
         beforeEach(function() {
-            subject = subject.withProtocolName('MQTT');
+            subject = subject.withProtocolName('MQTT')
+                .withProtocolVersion(4);
         });
 
         it('parses the protocol name', function(done) {
             parseConnectMessage(subject.buffer(), function(err, message) {
                 var headers = message.headers;
                 headers.variable.protocol.name.should.eql(constants.protocol.name);
+                done();
+            });
+        });
+
+        it('parses the protocol version', function(done) {
+            parseConnectMessage(subject.buffer(), function(err, message) {
+                var headers = message.headers;
+                headers.variable.protocol.version.should.eql(constants.protocol.version);
                 done();
             });
         });
