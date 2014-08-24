@@ -4,8 +4,11 @@ var assert = require('assert');
 var constants = require('../lib/constants');
 var services = require('../lib/services');
 
+//TODO: seems like business logic here... maybe this should move
+//      inside so that services.remainingLength only has a parse method exposed?
 function parseRemainingLength(buffer) {
     var bytes = services.remainingLength.readBytes(buffer);
+    // TODO should this throw an error rather than returning one?
     return services.remainingLength.decode(bytes);
 }
 
@@ -15,6 +18,7 @@ function parse(buffer) {
     message.type = (buffer.readUInt8(0) & 16) >> 4;
     message.headers = {};
     message.headers.fixed = {};
+    // no checking to see if parseRemainingLength returns an error.
     message.headers.fixed.remainingLength = parseRemainingLength(buffer);
     return message;
 }
@@ -26,7 +30,6 @@ function startTCP(callback) {
 
     var server = net.createServer(function(socket) {
 
-        console.log("Connection from " + socket.remoteAddress);
         socket.on('data', function(chunk) {
             var message = parse(chunk);
             socket.write(new Buffer(JSON.stringify(message)));
@@ -34,7 +37,7 @@ function startTCP(callback) {
 
     });
 
-    server.listen(TCPPORT, "localhost", callback);
+    server.listen(TCPPORT, 'localhost', callback);
     return server;
 }
 
@@ -44,11 +47,10 @@ function parseProxy(buffer, callback) {
             port: TCPPORT
         },
         function() {
-            console.log('client connected');
             client.write(buffer);
         });
+
     client.on('data', function(data) {
-        console.log(data.toString());
         callback(null, JSON.parse(data.toString()));
         client.end();
     });
@@ -126,7 +128,14 @@ describe('Parsing a Connect Message', function() {
             });
         });
 
-        it('goes BOOM when the remaining length is 5 or more bytes');
+        //TODO: currently skipped until an error is actually thrown
+        it.skip('goes BOOM when the remaining length is 5 or more bytes', function() {
+            var remainingLength = services.remainingLength.upperLimit(5);
+            var buffer = subject.withRemainingLength(remainingLength).buffer();
+            assert.throws(function() {
+                parseConnectMessage(buffer, function() {});
+            }, /malformed remaining length/);
+        });
 
     });
 
