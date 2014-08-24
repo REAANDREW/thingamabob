@@ -52,6 +52,9 @@ function parse(buffer) {
     message.headers.variable.connectFlags = connectFlags;
     index += 1;
 
+    var keepAlive = buffer.readUInt16BE(index);
+    message.headers.variable.keepAlive = keepAlive;
+
     return okResult(message);
 }
 
@@ -227,7 +230,7 @@ describe('MQTT UTF-8 string', function() {
 describe('Parsing a Connect Message', function() {
 
     function message() {
-        var buffers = new Array(5);
+        var buffers = new Array(6);
 
         var self = {
             withMessageType: withMessageType,
@@ -235,6 +238,7 @@ describe('Parsing a Connect Message', function() {
             withProtocolName: withProtocolName,
             withProtocolVersion: withProtocolVersion,
             withConnectFlags: withConnectFlags,
+            withKeepAlive: withKeepAlive,
             buffer: buffer
         };
 
@@ -287,6 +291,13 @@ describe('Parsing a Connect Message', function() {
             return self;
         }
 
+        function withKeepAlive(value) {
+            var buffer = new Buffer(2);
+            buffer.writeUInt16BE(value, 0);
+            buffers[5] = buffer;
+            return self;
+        }
+
         function buffer() {
             var messageBuffer = new Buffer(0);
             for (var index = 0; index < buffers.length; index++) {
@@ -300,9 +311,8 @@ describe('Parsing a Connect Message', function() {
                 .withRemainingLength(services.remainingLength.upperLimit(1))
                 .withProtocolName(constants.protocol.name)
                 .withProtocolVersion(constants.protocol.version)
-                .withConnectFlags({
-                    reserved: false
-                });
+                .withConnectFlags({})
+                .withKeepAlive(60);
         })();
 
         return self;
@@ -362,7 +372,17 @@ describe('Parsing a Connect Message', function() {
 
         beforeEach(function() {
             subject = subject.withProtocolName('MQTT')
-                .withProtocolVersion(4);
+                .withProtocolVersion(4)
+                .withConnectFlags({
+                    reserved: true,
+                    cleanSession: true,
+                    willFlag: true,
+                    willQos: constants.qualityOfService.AT_MOST_ONCE,
+                    willRetain: true,
+                    passwordFlag: true,
+                    usernameFlag: true
+                })
+                .withKeepAlive(60);
         });
 
         it('parses the protocol name', function(done) {
@@ -387,15 +407,7 @@ describe('Parsing a Connect Message', function() {
              * */
             beforeEach(function(done) {
                 var self = this;
-                subject = subject.withConnectFlags({
-                    reserved: true,
-                    cleanSession: true,
-                    willFlag: true,
-                    willQos: constants.qualityOfService.AT_MOST_ONCE,
-                    willRetain: true,
-                    passwordFlag: true,
-                    usernameFlag: true
-                });
+                subject = subject;
                 parseConnectMessage(subject.buffer(), function(err, message) {
                     var headers = message.headers;
                     self.connectFlags = headers.variable.connectFlags;
@@ -468,6 +480,14 @@ describe('Parsing a Connect Message', function() {
 
             it('parses the username flag as true', function() {
                 this.connectFlags.usernameFlag.should.eql(true);
+            });
+        });
+
+        it('parses the keep alive', function(done) {
+            parseConnectMessage(subject.buffer(), function(err, message) {
+                var headers = message.headers;
+                headers.variable.keepAlive.should.eql(60);
+                done();
             });
         });
     });
