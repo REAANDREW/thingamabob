@@ -43,9 +43,14 @@ function parse(buffer) {
     var protocolName = decodeMqttUtfString(buffer, index);
     message.headers.variable.protocol.name = protocolName.value;
     index += protocolName.totalByteCount;
-    
+
     var protocolVersion = buffer.readUInt8(index);
     message.headers.variable.protocol.version = protocolVersion;
+    index += 1;
+
+    var connectFlags = parseConnectFlags(buffer, index);
+    message.headers.variable.connectFlags = connectFlags;
+    index += 1;
 
     return okResult(message);
 }
@@ -109,6 +114,90 @@ function encodeMqttUtfString(value) {
     return Buffer.concat([lengthBuffer, utf8Buffer]);
 }
 
+function parseConnectFlags(buffer, offset) {
+    var word = buffer.readUInt8(offset);
+    var returnObj = {};
+    returnObj.reserved = (word & 1) === 1;
+    returnObj.cleanSession = (word & 2) === 2;
+    returnObj.willFlag = (word & 4) === 4;
+    returnObj.willQos = (word & 24) >> 3;
+    returnObj.willRetain = (word & 32) === 32;
+    returnObj.passwordFlag = (word & 64) === 64;
+    returnObj.usernameFlag = (word & 128) === 128;
+    return returnObj;
+}
+
+describe('Parsing CONNECT flags', function() {
+
+    function createFlagsBuffer(word) {
+        var buffer = new Buffer(1);
+        buffer.writeUInt8(word, 0);
+        return buffer;
+    }
+    it('parses true for reserved', function() {
+        var connectFlags = parseConnectFlags(createFlagsBuffer(1), 0);
+        connectFlags.reserved.should.eql(true);
+    });
+
+    it('parses true for clean session', function() {
+        var connectFlags = parseConnectFlags(createFlagsBuffer(2), 0);
+        connectFlags.cleanSession.should.eql(true);
+    });
+
+    it('parses true for will flag', function() {
+        var connectFlags = parseConnectFlags(createFlagsBuffer(4), 0);
+        connectFlags.willFlag.should.eql(true);
+    });
+
+    it('parses AT_MOST_ONCE for will qos', function() {
+        var connectFlags = parseConnectFlags(createFlagsBuffer(0), 0);
+        connectFlags.willQos.should.eql(constants.qualityOfService.AT_MOST_ONCE);
+    });
+
+    it('parses AT_LEAST_ONCE for will qos', function() {
+        var connectFlags = parseConnectFlags(createFlagsBuffer(8), 0);
+        connectFlags.willQos.should.eql(constants.qualityOfService.AT_LEAST_ONCE);
+    });
+
+    it('parses EXACTLY_ONCE for will qos', function() {
+        var connectFlags = parseConnectFlags(createFlagsBuffer(16), 0);
+        connectFlags.willQos.should.eql(constants.qualityOfService.EXACTLY_ONCE);
+    });
+
+    it('parses RESERVED for will qos', function() {
+        var connectFlags = parseConnectFlags(createFlagsBuffer(24), 0);
+        connectFlags.willQos.should.eql(constants.qualityOfService.RESERVED);
+    });
+
+    it('parses true for will retain', function() {
+        var connectFlags = parseConnectFlags(createFlagsBuffer(32), 0);
+        connectFlags.willRetain.should.eql(true);
+    });
+
+    it('parses true for password flag', function() {
+        var connectFlags = parseConnectFlags(createFlagsBuffer(64), 0);
+        connectFlags.passwordFlag.should.eql(true);
+    });
+
+    it('parses true for username flag', function() {
+        var connectFlags = parseConnectFlags(createFlagsBuffer(128), 0);
+        connectFlags.usernameFlag.should.eql(true);
+    });
+
+    it('parse returns defaults', function() {
+        var connectFlags = parseConnectFlags(createFlagsBuffer(0), 0);
+        connectFlags.should.eql({
+            reserved: false,
+            cleanSession: false,
+            willFlag: false,
+            willQos: constants.qualityOfService.AT_MOST_ONCE,
+            willRetain: false,
+            passwordFlag: false,
+            usernameFlag: false
+        });
+    });
+});
+
 describe('MQTT UTF-8 string', function() {
 
     it('decoding', function() {
@@ -138,13 +227,14 @@ describe('MQTT UTF-8 string', function() {
 describe('Parsing a Connect Message', function() {
 
     function message() {
-        var buffers = new Array(4);
+        var buffers = new Array(5);
 
         var self = {
             withMessageType: withMessageType,
             withRemainingLength: withRemainingLength,
             withProtocolName: withProtocolName,
             withProtocolVersion: withProtocolVersion,
+            withConnectFlags: withConnectFlags,
             buffer: buffer
         };
 
@@ -174,6 +264,29 @@ describe('Parsing a Connect Message', function() {
             return self;
         }
 
+        function withConnectFlags(flags) {
+            var flagsWord = 0;
+            var buffer = new Buffer(1);
+
+            function flip(word, value, confirm) {
+                if (confirm) {
+                    return word | value;
+                } else {
+                    return word;
+                }
+            }
+            flagsWord = flip(flagsWord, 1, flags.reserved);
+            flagsWord = flip(flagsWord, 2, flags.cleanSession);
+            flagsWord = flip(flagsWord, 4, flags.willFlag);
+            flagsWord = (flags.willQos << 3) | flagsWord;
+            flagsWord = flip(flagsWord, 32, flags.willRetain);
+            flagsWord = flip(flagsWord, 64, flags.passwordFlag);
+            flagsWord = flip(flagsWord, 128, flags.usernameFlag);
+            buffer.writeUInt8(flagsWord, 0);
+            buffers[4] = buffer;
+            return self;
+        }
+
         function buffer() {
             var messageBuffer = new Buffer(0);
             for (var index = 0; index < buffers.length; index++) {
@@ -186,7 +299,10 @@ describe('Parsing a Connect Message', function() {
             withMessageType(constants.messageTypes.CONNECT)
                 .withRemainingLength(services.remainingLength.upperLimit(1))
                 .withProtocolName(constants.protocol.name)
-                .withProtocolVersion(constants.protocol.version);
+                .withProtocolVersion(constants.protocol.version)
+                .withConnectFlags({
+                    reserved: false
+                });
         })();
 
         return self;
@@ -262,6 +378,96 @@ describe('Parsing a Connect Message', function() {
                 var headers = message.headers;
                 headers.variable.protocol.version.should.eql(constants.protocol.version);
                 done();
+            });
+        });
+
+        describe('parses the CONNECT flags', function() {
+            /* There are tests that the parseConnectFlags defaults its values
+             * if not set.  So only checking for truthy here.  I think this has it covered
+             * */
+            beforeEach(function(done) {
+                var self = this;
+                subject = subject.withConnectFlags({
+                    reserved: true,
+                    cleanSession: true,
+                    willFlag: true,
+                    willQos: constants.qualityOfService.AT_MOST_ONCE,
+                    willRetain: true,
+                    passwordFlag: true,
+                    usernameFlag: true
+                });
+                parseConnectMessage(subject.buffer(), function(err, message) {
+                    var headers = message.headers;
+                    self.connectFlags = headers.variable.connectFlags;
+                    done();
+                });
+            });
+
+            it('parses the reserved flag as true', function() {
+                this.connectFlags.reserved.should.eql(true);
+            });
+
+            it('parses the clean session flag as true', function() {
+                this.connectFlags.cleanSession.should.eql(true);
+            });
+
+            it('parses the will flag as true', function() {
+                this.connectFlags.willFlag.should.eql(true);
+            });
+
+            it('parses the will qos as AT_MOST_ONCE', function() {
+                subject = subject.withConnectFlags({
+                    willQos: constants.qualityOfService.AT_MOST_ONCE
+                });
+                this.connectFlags.willQos.should.eql(constants.qualityOfService.AT_MOST_ONCE);
+            });
+
+            it('parses the will qos as AT_LEAST_ONCE', function(done) {
+                subject = subject.withConnectFlags({
+                    willQos: constants.qualityOfService.AT_LEAST_ONCE
+                });
+                parseConnectMessage(subject.buffer(), function(err, message) {
+                    var headers = message.headers;
+                    var connectFlags = headers.variable.connectFlags;
+                    connectFlags.willQos.should.eql(constants.qualityOfService.AT_LEAST_ONCE);
+                    done();
+                });
+            });
+
+            it('parses the will qos as EXACTLY_ONCE', function(done) {
+                subject = subject.withConnectFlags({
+                    willQos: constants.qualityOfService.EXACTLY_ONCE
+                });
+                parseConnectMessage(subject.buffer(), function(err, message) {
+                    var headers = message.headers;
+                    var connectFlags = headers.variable.connectFlags;
+                    connectFlags.willQos.should.eql(constants.qualityOfService.EXACTLY_ONCE);
+                    done();
+                });
+            });
+
+            it('parses the will qos as RESERVED', function(done) {
+                subject = subject.withConnectFlags({
+                    willQos: constants.qualityOfService.RESERVED
+                });
+                parseConnectMessage(subject.buffer(), function(err, message) {
+                    var headers = message.headers;
+                    var connectFlags = headers.variable.connectFlags;
+                    connectFlags.willQos.should.eql(constants.qualityOfService.RESERVED);
+                    done();
+                });
+            });
+
+            it('parses the will retain as true', function() {
+                this.connectFlags.willRetain.should.eql(true);
+            });
+
+            it('parses the password flag as true', function() {
+                this.connectFlags.passwordFlag.should.eql(true);
+            });
+
+            it('parses the username flag as true', function() {
+                this.connectFlags.usernameFlag.should.eql(true);
             });
         });
     });
