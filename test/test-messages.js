@@ -1,12 +1,29 @@
 'use strict';
 
-var assert = require('assert');
+var should = require('should');
 var constants = require('../lib/constants');
 var services = require('../lib/services');
+
+var errorCodes = {
+    connect: {
+        malformedRemainingLength: {
+            statusCode: 1,
+            statusMessage: 'the remaining length should be between 1 and 4 bytes long inclusive'
+        }
+    }
+}
 
 function parseRemainingLength(buffer) {
     var bytes = services.remainingLength.readBytes(buffer);
     return services.remainingLength.decode(bytes);
+}
+
+function okResult(payload) {
+    return {
+        statusCode: 0,
+        statusMessage: 'OK',
+        payload: payload
+    }
 }
 
 
@@ -15,8 +32,12 @@ function parse(buffer) {
     message.type = (buffer.readUInt8(0) & 16) >> 4;
     message.headers = {};
     message.headers.fixed = {};
-    message.headers.fixed.remainingLength = parseRemainingLength(buffer);
-    return message;
+    var remainingLengthResult = parseRemainingLength(buffer);
+    if (remainingLengthResult instanceof Error) {
+        return errorCodes.connect.malformedRemainingLength;
+    }
+    message.headers.fixed.remainingLength = remainingLengthResult;
+    return okResult(message);
 }
 
 var TCPPORT = 8124;
@@ -26,7 +47,6 @@ function startTCP(callback) {
 
     var server = net.createServer(function(socket) {
 
-        console.log("Connection from " + socket.remoteAddress);
         socket.on('data', function(chunk) {
             var message = parse(chunk);
             socket.write(new Buffer(JSON.stringify(message)));
@@ -34,7 +54,7 @@ function startTCP(callback) {
 
     });
 
-    server.listen(TCPPORT, "localhost", callback);
+    server.listen(TCPPORT, 'localhost', callback);
     return server;
 }
 
@@ -44,12 +64,15 @@ function parseProxy(buffer, callback) {
             port: TCPPORT
         },
         function() {
-            console.log('client connected');
             client.write(buffer);
         });
     client.on('data', function(data) {
-        console.log(data.toString());
-        callback(null, JSON.parse(data.toString()));
+        var data = JSON.parse(data.toString());
+        if (data.statusCode != 0) {
+            callback(data, null);
+        } else {
+            callback(null, data.payload);
+        }
         client.end();
     });
 }
@@ -61,34 +84,46 @@ function parseConnectMessage(buffer, callback) {
 describe('Parsing a Connect Message', function() {
 
     function message() {
-        var messageBuffer = new Buffer(0);
+        var buffers = new Array(2);
 
-        function add(buffer) {
-            messageBuffer = Buffer.concat([messageBuffer, buffer]);
+        var self = {
+            withMessageType: withMessageType,
+            withRemainingLength: withRemainingLength,
+            buffer: buffer
+        };
+
+        function withMessageType(type) {
+            var buffer = new Buffer(1);
+            buffer.writeUInt8(type << 4, 0);
+            buffers[0] = buffer;
+            return self;
         }
 
-        return {
-            withMessageType: function(type) {
-                var buffer = new Buffer(1);
-                buffer.writeUInt8(type << 4, 0);
-                add(buffer);
-                return this;
-            },
-            withRemainingLength: function(value) {
-                var buffer = new Buffer(services.remainingLength.encode(value));
-                add(buffer);
-                return this;
-            },
-            buffer: function() {
-                return messageBuffer;
+        function withRemainingLength(value) {
+            var buffer = new Buffer(services.remainingLength.encode(value));
+            buffers[1] = buffer;
+            return self;
+        }
+
+        function buffer() {
+            var messageBuffer = new Buffer(0);
+            for(var index = 0; index < buffers.length; index++){
+                messageBuffer = Buffer.concat([messageBuffer, buffers[index]]);
             }
-        };
+            return messageBuffer;
+        }
+
+        (function initialize() {
+            withMessageType(constants.messageTypes.CONNECT)
+                .withRemainingLength(services.remainingLength.upperLimit(1));
+        })();
+
+        return self;
     }
 
     var subject, tcpServer;
 
     before(function(done) {
-
         tcpServer = startTCP(done);
     });
 
@@ -103,7 +138,7 @@ describe('Parsing a Connect Message', function() {
 
     it('parses the message type', function(done) {
         parseConnectMessage(subject.buffer(), function(err, message) {
-            assert.equal(message.type, constants.messageTypes.CONNECT);
+            message.type.should.eql(constants.messageTypes.CONNECT);
             done();
         });
     });
@@ -115,7 +150,7 @@ describe('Parsing a Connect Message', function() {
             var buffer = subject.withRemainingLength(remainingLength).buffer();
             parseConnectMessage(buffer, function(err, message) {
                 var headers = message.headers;
-                assert.equal(headers.fixed.remainingLength, remainingLength);
+                headers.fixed.remainingLength.should.eql(remainingLength);
             });
         }
         var lengths = [1, 2, 3, 4];
@@ -126,7 +161,14 @@ describe('Parsing a Connect Message', function() {
             });
         });
 
-        it('goes BOOM when the remaining length is 5 or more bytes');
+        it('return malformedRemainingLength code when the remaining length is 5 or more bytes', function() {
+            var remainingLength = services.remainingLength.upperLimit(5);
+            var buffer = subject.withRemainingLength(remainingLength).buffer();
+            parseConnectMessage(buffer, function(err, message) {
+                should.exist(err);
+                err.should.eql(errorCodes.connect.malformedRemainingLength)
+            });
+        });
 
     });
 
