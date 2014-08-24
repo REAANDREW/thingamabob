@@ -26,7 +26,6 @@ function okResult(payload) {
     }
 }
 
-
 function parse(buffer) {
     var message = {};
     message.type = (buffer.readUInt8(0) & 16) >> 4;
@@ -81,6 +80,44 @@ function parseConnectMessage(buffer, callback) {
     parseProxy(buffer, callback);
 }
 
+function parseMqttUtfString(buffer, offset) {
+    var length = buffer.readUInt16BE(offset);
+    var start = offset + 2;
+    var end = start + length;
+    return buffer.toString('utf8', start, end);
+}
+
+function encodeMqttUtfString(value) {
+    var utf8Buffer = new Buffer(value, 'utf8');
+    var lengthBuffer = new Buffer(2);
+    lengthBuffer.writeUInt16BE(utf8Buffer.length, 0);
+    return Buffer.concat([lengthBuffer, utf8Buffer]);
+}
+
+describe('MQTT UTF-8 string', function() {
+
+    it('decoding', function() {
+        var utf8Char = [0xE2, 0x82, 0xAC];
+        var euro = new Buffer(utf8Char);
+        var sizeBuffer = new Buffer(2);
+        sizeBuffer.writeUInt16BE(utf8Char.length, 0);
+        var mqttUtfBuffer = Buffer.concat([sizeBuffer, new Buffer(utf8Char)]);
+
+        var result = parseMqttUtfString(mqttUtfBuffer, 0);
+        result.should.eql(euro.toString('utf8'));
+    });
+
+    it('encoding', function() {
+        var utf8Char = [0xE2, 0x82, 0xAC];
+        var mqttEncodedStringBuffer = encodeMqttUtfString(new Buffer(utf8Char).toString('utf8'));
+        mqttEncodedStringBuffer.readUInt16BE(0).should.eql(3);
+        mqttEncodedStringBuffer[2].should.eql(utf8Char[0]);
+        mqttEncodedStringBuffer[3].should.eql(utf8Char[1]);
+        mqttEncodedStringBuffer[4].should.eql(utf8Char[2]);
+    });
+
+});
+
 describe('Parsing a Connect Message', function() {
 
     function message() {
@@ -107,7 +144,7 @@ describe('Parsing a Connect Message', function() {
 
         function buffer() {
             var messageBuffer = new Buffer(0);
-            for(var index = 0; index < buffers.length; index++){
+            for (var index = 0; index < buffers.length; index++) {
                 messageBuffer = Buffer.concat([messageBuffer, buffers[index]]);
             }
             return messageBuffer;
@@ -144,7 +181,6 @@ describe('Parsing a Connect Message', function() {
     });
 
     describe('parsing the remaining length', function() {
-
         function assertRemainingLength(number) {
             var remainingLength = services.remainingLength.upperLimit(number);
             var buffer = subject.withRemainingLength(remainingLength).buffer();
@@ -153,6 +189,7 @@ describe('Parsing a Connect Message', function() {
                 headers.fixed.remainingLength.should.eql(remainingLength);
             });
         }
+
         var lengths = [1, 2, 3, 4];
 
         lengths.map(function(length) {
@@ -169,7 +206,8 @@ describe('Parsing a Connect Message', function() {
                 err.should.eql(errorCodes.connect.malformedRemainingLength)
             });
         });
-
     });
+
+
 
 });
