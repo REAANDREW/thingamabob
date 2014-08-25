@@ -13,6 +13,10 @@ var errorCodes = {
     }
 };
 
+function existy(value) {
+    return value !== null && value !== undefined;
+}
+
 function parseRemainingLength(buffer) {
     var bytes = services.remainingLength.readBytes(buffer);
     return services.remainingLength.decode(bytes);
@@ -26,7 +30,7 @@ function okResult(payload) {
     };
 }
 
-function defaultConnectMessage(){
+function defaultConnectMessage() {
     var message = {};
     message.type = constants.messageTypes.CONNECT;
     message.headers = {};
@@ -35,11 +39,12 @@ function defaultConnectMessage(){
     message.headers.variable.protocol = {};
     message.payload = {};
     message.payload.client = {};
+    message.payload.will = {};
     return message;
 }
 
 function parseConnectPacket(buffer) {
-    var  message = defaultConnectMessage();
+    var message = defaultConnectMessage();
     message.type = (buffer.readUInt8(0) & 16) >> 4;
     var remainingLengthResult = parseRemainingLength(buffer);
     if (remainingLengthResult instanceof Error) {
@@ -67,6 +72,12 @@ function parseConnectPacket(buffer) {
     var clientIdentifier = decodeMqttUtfString(buffer, index);
     message.payload.client.id = clientIdentifier.value;
     index += clientIdentifier.totalByteCount;
+
+    if(connectFlags.willFlag){
+        var willTopic = decodeMqttUtfString(buffer, index);
+        message.payload.will.topic = willTopic.value;
+        index += willTopic.totalByteCount;
+    }
 
     return okResult(message);
 }
@@ -244,6 +255,7 @@ describe('Parsing a Connect Message', function() {
 
     function message() {
         var buffers = new Array(7);
+        var payloadBuffers = new Array(4);
 
         var self = {
             withMessageType: withMessageType,
@@ -253,6 +265,7 @@ describe('Parsing a Connect Message', function() {
             withConnectFlags: withConnectFlags,
             withKeepAlive: withKeepAlive,
             withClientIdentifier: withClientIdentifier,
+            withWillTopic: withWillTopic,
             buffer: buffer
         };
 
@@ -318,10 +331,21 @@ describe('Parsing a Connect Message', function() {
             return self;
         }
 
+        function withWillTopic(value) {
+            var encodedValue = encodeMqttUtfString(value);
+            payloadBuffers[0] = encodedValue;
+            return self;
+        }
+
         function buffer() {
             var messageBuffer = new Buffer(0);
             for (var index = 0; index < buffers.length; index++) {
                 messageBuffer = Buffer.concat([messageBuffer, buffers[index]]);
+            }
+            for (var index = 0; index < payloadBuffers.length; index++) {
+                if (existy(payloadBuffers[index])) {
+                    messageBuffer = Buffer.concat([messageBuffer, payloadBuffers[index]]);
+                }
             }
             return messageBuffer;
         }
@@ -333,7 +357,8 @@ describe('Parsing a Connect Message', function() {
                 .withProtocolVersion(constants.protocol.version)
                 .withConnectFlags({})
                 .withKeepAlive(60)
-                .withClientIdentifier('clientABC');
+                .withClientIdentifier('clientABC')
+                .withWillTopic('topicABC');
         })();
 
         return self;
@@ -524,6 +549,20 @@ describe('Parsing a Connect Message', function() {
             });
         });
 
+    });
+
+    describe('parsing the will topic', function() {
+        it('parses', function(done) {
+            var expectedTopic = 'someTopic';
+            subject = subject.withConnectFlags({
+                willFlag : true
+            }).withWillTopic(expectedTopic);
+
+            parseConnectMessage(subject.buffer(), function(err, message) {
+                message.payload.will.topic.should.eql(expectedTopic);
+                done();
+            });
+        });
     });
 
 });
