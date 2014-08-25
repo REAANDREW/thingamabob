@@ -45,6 +45,7 @@ function defaultConnectMessage() {
 
 function parseConnectPacket(buffer) {
     var message = defaultConnectMessage();
+    var connectFlags;
     message.type = (buffer.readUInt8(0) & 16) >> 4;
     var remainingLengthResult = parseRemainingLength(buffer);
     if (remainingLengthResult instanceof Error) {
@@ -53,31 +54,46 @@ function parseConnectPacket(buffer) {
     message.headers.fixed.remainingLength = remainingLengthResult;
 
     var index = 1 + services.remainingLength.byteCount(remainingLengthResult);
-    var protocolName = decodeMqttUtfString(buffer, index);
-    message.headers.variable.protocol.name = protocolName.value;
-    index += protocolName.totalByteCount;
 
-    var protocolVersion = buffer.readUInt8(index);
-    message.headers.variable.protocol.version = protocolVersion;
-    index += 1;
+    (function readProtocolName() {
+        var protocolName = decodeMqttUtfString(buffer, index);
+        message.headers.variable.protocol.name = protocolName.value;
+        index += protocolName.totalByteCount;
+    })();
 
-    var connectFlags = parseConnectFlags(buffer, index);
-    message.headers.variable.connectFlags = connectFlags;
-    index += 1;
+    (function readProtocolVersion() {
+        var protocolVersion = buffer.readUInt8(index);
+        message.headers.variable.protocol.version = protocolVersion;
+        index += 1;
+    })();
 
-    var keepAlive = buffer.readUInt16BE(index);
-    message.headers.variable.keepAlive = keepAlive;
-    index += 2;
+    (function readConnectFlags() {
+        connectFlags = parseConnectFlags(buffer, index);
+        message.headers.variable.connectFlags = connectFlags;
+        index += 1;
+    })();
 
-    var clientIdentifier = decodeMqttUtfString(buffer, index);
-    message.payload.client.id = clientIdentifier.value;
-    index += clientIdentifier.totalByteCount;
+    (function readKeepAlive() {
+        var keepAlive = buffer.readUInt16BE(index);
+        message.headers.variable.keepAlive = keepAlive;
+        index += 2;
+    })();
 
-    if(connectFlags.willFlag){
-        var willTopic = decodeMqttUtfString(buffer, index);
-        message.payload.will.topic = willTopic.value;
-        index += willTopic.totalByteCount;
-    }
+    (function readPayload() {
+        var clientIdentifier = decodeMqttUtfString(buffer, index);
+        message.payload.client.id = clientIdentifier.value;
+        index += clientIdentifier.totalByteCount;
+
+        if (connectFlags.willFlag) {
+            var willTopic = decodeMqttUtfString(buffer, index);
+            message.payload.will.topic = willTopic.value;
+            index += willTopic.totalByteCount;
+
+            var willMessage = decodeMqttUtfString(buffer, index);
+            message.payload.will.message = willMessage.value;
+            index += willMessage.totalByteCount;
+        }
+    })();
 
     return okResult(message);
 }
@@ -266,6 +282,7 @@ describe('Parsing a Connect Message', function() {
             withKeepAlive: withKeepAlive,
             withClientIdentifier: withClientIdentifier,
             withWillTopic: withWillTopic,
+            withWillMessage: withWillMessage,
             buffer: buffer
         };
 
@@ -337,12 +354,20 @@ describe('Parsing a Connect Message', function() {
             return self;
         }
 
+        function withWillMessage(value) {
+            var encodedValue = encodeMqttUtfString(value);
+            payloadBuffers[1] = encodedValue;
+            return self;
+        }
+
         function buffer() {
+            // jshint maxcomplexity:5
+            var index;
             var messageBuffer = new Buffer(0);
-            for (var index = 0; index < buffers.length; index++) {
+            for (index = 0; index < buffers.length; index++) {
                 messageBuffer = Buffer.concat([messageBuffer, buffers[index]]);
             }
-            for (var index = 0; index < payloadBuffers.length; index++) {
+            for (index = 0; index < payloadBuffers.length; index++) {
                 if (existy(payloadBuffers[index])) {
                     messageBuffer = Buffer.concat([messageBuffer, payloadBuffers[index]]);
                 }
@@ -358,7 +383,8 @@ describe('Parsing a Connect Message', function() {
                 .withConnectFlags({})
                 .withKeepAlive(60)
                 .withClientIdentifier('clientABC')
-                .withWillTopic('topicABC');
+                .withWillTopic('topicABC')
+                .withWillMessage('messageABC');
         })();
 
         return self;
@@ -551,15 +577,30 @@ describe('Parsing a Connect Message', function() {
 
     });
 
-    describe('parsing the will topic', function() {
-        it('parses', function(done) {
-            var expectedTopic = 'someTopic';
-            subject = subject.withConnectFlags({
-                willFlag : true
-            }).withWillTopic(expectedTopic);
+    describe('parsing the will', function() {
 
+        var expectedTopic, expectedMessage;
+
+        beforeEach(function() {
+            expectedTopic = 'someTopic';
+            expectedMessage = 'someMessage';
+            subject = subject.withConnectFlags({
+                willFlag: true
+            })
+                .withWillTopic(expectedTopic)
+                .withWillMessage(expectedMessage);
+        });
+
+        it('parses the will topic', function(done) {
             parseConnectMessage(subject.buffer(), function(err, message) {
                 message.payload.will.topic.should.eql(expectedTopic);
+                done();
+            });
+        });
+
+        it('parses the will message', function(done) {
+            parseConnectMessage(subject.buffer(), function(err, message) {
+                message.payload.will.message.should.eql(expectedMessage);
                 done();
             });
         });
