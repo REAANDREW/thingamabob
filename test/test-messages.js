@@ -93,6 +93,12 @@ function parseConnectPacket(buffer) {
             message.payload.will.message = willMessage.value;
             index += willMessage.totalByteCount;
         }
+
+        if (connectFlags.usernameFlag) {
+            var username = decodeMqttUtfString(buffer, index);
+            message.payload.username = username.value;
+            index += username.totalByteCount;
+        }
     })();
 
     return okResult(message);
@@ -271,7 +277,13 @@ describe('Parsing a Connect Message', function() {
 
     function message() {
         var buffers = new Array(7);
-        var payloadBuffers = new Array(4);
+        var payloadBuffers = [
+            new Buffer(0),
+            new Buffer(0),
+            new Buffer(0),
+            new Buffer(0)
+        ];
+        var connectFlags;
 
         var self = {
             withMessageType: withMessageType,
@@ -283,6 +295,7 @@ describe('Parsing a Connect Message', function() {
             withClientIdentifier: withClientIdentifier,
             withWillTopic: withWillTopic,
             withWillMessage: withWillMessage,
+            withUsername: withUsername,
             buffer: buffer
         };
 
@@ -313,6 +326,7 @@ describe('Parsing a Connect Message', function() {
         }
 
         function withConnectFlags(flags) {
+            connectFlags = flags;
             var flagsWord = 0;
             var buffer = new Buffer(1);
 
@@ -360,6 +374,12 @@ describe('Parsing a Connect Message', function() {
             return self;
         }
 
+        function withUsername(value) {
+            var encodedValue = encodeMqttUtfString(value);
+            payloadBuffers[2] = encodedValue;
+            return self;
+        }
+
         function buffer() {
             // jshint maxcomplexity:5
             var index;
@@ -367,11 +387,26 @@ describe('Parsing a Connect Message', function() {
             for (index = 0; index < buffers.length; index++) {
                 messageBuffer = Buffer.concat([messageBuffer, buffers[index]]);
             }
+            /*
             for (index = 0; index < payloadBuffers.length; index++) {
                 if (existy(payloadBuffers[index])) {
                     messageBuffer = Buffer.concat([messageBuffer, payloadBuffers[index]]);
                 }
             }
+            */
+
+            if (connectFlags.willFlag) {
+                messageBuffer = Buffer.concat([messageBuffer, payloadBuffers[0], payloadBuffers[1]]);
+            }
+
+            if (connectFlags.usernameFlag) {
+                messageBuffer = Buffer.concat([messageBuffer, payloadBuffers[2]]);
+            }
+
+            if (connectFlags.passwordFlag) {
+                messageBuffer = Buffer.concat([messageBuffer, payloadBuffers[3]]);
+            }
+
             return messageBuffer;
         }
 
@@ -384,7 +419,8 @@ describe('Parsing a Connect Message', function() {
                 .withKeepAlive(60)
                 .withClientIdentifier('clientABC')
                 .withWillTopic('topicABC')
-                .withWillMessage('messageABC');
+                .withWillMessage('messageABC')
+                .withUsername('');
         })();
 
         return self;
@@ -586,8 +622,7 @@ describe('Parsing a Connect Message', function() {
             expectedMessage = 'someMessage';
             subject = subject.withConnectFlags({
                 willFlag: true
-            })
-                .withWillTopic(expectedTopic)
+            }).withWillTopic(expectedTopic)
                 .withWillMessage(expectedMessage);
         });
 
@@ -601,6 +636,22 @@ describe('Parsing a Connect Message', function() {
         it('parses the will message', function(done) {
             parseConnectMessage(subject.buffer(), function(err, message) {
                 message.payload.will.message.should.eql(expectedMessage);
+                done();
+            });
+        });
+    });
+
+    describe('parsing the username', function() {
+        it('parses', function(done) {
+            var expectedUsername = 'foobar';
+
+            subject = subject.withConnectFlags({
+                usernameFlag: true
+            }).withUsername(expectedUsername);
+
+
+            parseConnectMessage(subject.buffer(), function(err, message) {
+                message.payload.username.should.eql(expectedUsername);
                 done();
             });
         });
