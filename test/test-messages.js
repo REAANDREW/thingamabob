@@ -99,6 +99,12 @@ function parseConnectPacket(buffer) {
             message.payload.username = username.value;
             index += username.totalByteCount;
         }
+
+        if (connectFlags.passwordFlag) {
+            var password = decodeMqttUtfString(buffer, index);
+            message.payload.password = password.value;
+            index += password.totalByteCount;
+        }
     })();
 
     return okResult(message);
@@ -296,6 +302,7 @@ describe('Parsing a Connect Message', function() {
             withWillTopic: withWillTopic,
             withWillMessage: withWillMessage,
             withUsername: withUsername,
+            withPassword: withPassword,
             buffer: buffer
         };
 
@@ -380,6 +387,12 @@ describe('Parsing a Connect Message', function() {
             return self;
         }
 
+        function withPassword(value) {
+            var encodedValue = encodeMqttUtfString(value);
+            payloadBuffers[3] = encodedValue;
+            return self;
+        }
+
         function buffer() {
             // jshint maxcomplexity:5
             var index;
@@ -420,7 +433,8 @@ describe('Parsing a Connect Message', function() {
                 .withClientIdentifier('clientABC')
                 .withWillTopic('topicABC')
                 .withWillMessage('messageABC')
-                .withUsername('');
+                .withUsername('')
+                .withPassword('');
         })();
 
         return self;
@@ -642,6 +656,7 @@ describe('Parsing a Connect Message', function() {
     });
 
     describe('parsing the username', function() {
+
         it('parses', function(done) {
             var expectedUsername = 'foobar';
 
@@ -649,9 +664,25 @@ describe('Parsing a Connect Message', function() {
                 usernameFlag: true
             }).withUsername(expectedUsername);
 
-
             parseConnectMessage(subject.buffer(), function(err, message) {
                 message.payload.username.should.eql(expectedUsername);
+                done();
+            });
+        });
+
+    });
+
+    describe('parsing the password', function() {
+
+        it('parses', function(done) {
+            var expectedPassword = 'barfoo';
+
+            subject = subject.withConnectFlags({
+                passwordFlag: true
+            }).withPassword(expectedPassword);
+
+            parseConnectMessage(subject.buffer(), function(err, message) {
+                message.payload.password.should.eql(expectedPassword);
                 done();
             });
         });
