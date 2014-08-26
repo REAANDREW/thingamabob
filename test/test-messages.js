@@ -13,10 +13,6 @@ var errorCodes = {
     }
 };
 
-function existy(value) {
-    return value !== null && value !== undefined;
-}
-
 function parseRemainingLength(buffer) {
     var bytes = services.remainingLength.readBytes(buffer);
     return services.remainingLength.decode(bytes);
@@ -79,7 +75,7 @@ function parseConnectPacket(buffer) {
         index += 2;
     })();
 
-    (function readPayload() {
+    (function readWill() {
         var clientIdentifier = decodeMqttUtfString(buffer, index);
         message.payload.client.id = clientIdentifier.value;
         index += clientIdentifier.totalByteCount;
@@ -94,12 +90,17 @@ function parseConnectPacket(buffer) {
             index += willMessage.totalByteCount;
         }
 
+    })();
+
+    (function readUsername() {
         if (connectFlags.usernameFlag) {
             var username = decodeMqttUtfString(buffer, index);
             message.payload.username = username.value;
             index += username.totalByteCount;
         }
+    })();
 
+    (function readPassword() {
         if (connectFlags.passwordFlag) {
             var password = decodeMqttUtfString(buffer, index);
             message.payload.password = password.value;
@@ -400,13 +401,6 @@ describe('Parsing a Connect Message', function() {
             for (index = 0; index < buffers.length; index++) {
                 messageBuffer = Buffer.concat([messageBuffer, buffers[index]]);
             }
-            /*
-            for (index = 0; index < payloadBuffers.length; index++) {
-                if (existy(payloadBuffers[index])) {
-                    messageBuffer = Buffer.concat([messageBuffer, payloadBuffers[index]]);
-                }
-            }
-            */
 
             if (connectFlags.willFlag) {
                 messageBuffer = Buffer.concat([messageBuffer, payloadBuffers[0], payloadBuffers[1]]);
