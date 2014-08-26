@@ -3,105 +3,8 @@
 var should = require('should');
 var constants = require('../lib/constants');
 var services = require('../lib/services');
-
-
-function parseRemainingLength(buffer) {
-    var bytes = services.remainingLength.readBytes(buffer);
-    return services.remainingLength.decode(bytes);
-}
-
-function okResult(payload) {
-    return {
-        statusCode: 0,
-        statusMessage: 'OK',
-        payload: payload
-    };
-}
-
-function defaultConnectMessage() {
-    var message = {};
-    message.type = constants.messageTypes.CONNECT;
-    message.headers = {};
-    message.headers.fixed = {};
-    message.headers.variable = {};
-    message.headers.variable.protocol = {};
-    message.payload = {};
-    message.payload.client = {};
-    message.payload.will = {};
-    return message;
-}
-
-function parseConnectPacket(buffer) {
-    var message = defaultConnectMessage();
-    var connectFlags;
-    message.type = (buffer.readUInt8(0) & 16) >> 4;
-    var remainingLengthResult = parseRemainingLength(buffer);
-    if (remainingLengthResult instanceof Error) {
-        return constants.errorCodes.connect.malformedRemainingLength;
-    }
-    message.headers.fixed.remainingLength = remainingLengthResult;
-
-    var index = 1 + services.remainingLength.byteCount(remainingLengthResult);
-
-    (function readProtocolName() {
-        var protocolName = decodeMqttUtfString(buffer, index);
-        message.headers.variable.protocol.name = protocolName.value;
-        index += protocolName.totalByteCount;
-    })();
-
-    (function readProtocolVersion() {
-        var protocolVersion = buffer.readUInt8(index);
-        message.headers.variable.protocol.version = protocolVersion;
-        index += 1;
-    })();
-
-    (function readConnectFlags() {
-        connectFlags = parseConnectFlags(buffer, index);
-        message.headers.variable.connectFlags = connectFlags;
-        index += 1;
-    })();
-
-    (function readKeepAlive() {
-        var keepAlive = buffer.readUInt16BE(index);
-        message.headers.variable.keepAlive = keepAlive;
-        index += 2;
-    })();
-
-    (function readWill() {
-        var clientIdentifier = decodeMqttUtfString(buffer, index);
-        message.payload.client.id = clientIdentifier.value;
-        index += clientIdentifier.totalByteCount;
-
-        if (connectFlags.willFlag) {
-            var willTopic = decodeMqttUtfString(buffer, index);
-            message.payload.will.topic = willTopic.value;
-            index += willTopic.totalByteCount;
-
-            var willMessage = decodeMqttUtfString(buffer, index);
-            message.payload.will.message = willMessage.value;
-            index += willMessage.totalByteCount;
-        }
-
-    })();
-
-    (function readUsername() {
-        if (connectFlags.usernameFlag) {
-            var username = decodeMqttUtfString(buffer, index);
-            message.payload.username = username.value;
-            index += username.totalByteCount;
-        }
-    })();
-
-    (function readPassword() {
-        if (connectFlags.passwordFlag) {
-            var password = decodeMqttUtfString(buffer, index);
-            message.payload.password = password.value;
-            index += password.totalByteCount;
-        }
-    })();
-
-    return okResult(message);
-}
+var packets = require('../lib/packets');
+var connect = packets.connect;
 
 var TCPPORT = 8124;
 
@@ -111,7 +14,7 @@ function startTCP(callback) {
     var server = net.createServer(function(socket) {
 
         socket.on('data', function(chunk) {
-            var message = parseConnectPacket(chunk);
+            var message = connect.parsePacket(chunk);
             socket.write(new Buffer(JSON.stringify(message)));
         });
 
@@ -144,107 +47,6 @@ function parseConnectMessage(buffer, callback) {
     parseProxy(buffer, callback);
 }
 
-function decodeMqttUtfString(buffer, offset) {
-    var length = buffer.readUInt16BE(offset);
-    var start = offset + 2;
-    var end = start + length;
-    return {
-        value: buffer.toString('utf8', start, end),
-        byteCount: length,
-        totalByteCount: length + 2
-    };
-}
-
-function encodeMqttUtfString(value) {
-    var utf8Buffer = new Buffer(value, 'utf8');
-    var lengthBuffer = new Buffer(2);
-    lengthBuffer.writeUInt16BE(utf8Buffer.length, 0);
-    return Buffer.concat([lengthBuffer, utf8Buffer]);
-}
-
-function parseConnectFlags(buffer, offset) {
-    var word = buffer.readUInt8(offset);
-    var returnObj = {};
-    returnObj.reserved = (word & 1) === 1;
-    returnObj.cleanSession = (word & 2) === 2;
-    returnObj.willFlag = (word & 4) === 4;
-    returnObj.willQos = (word & 24) >> 3;
-    returnObj.willRetain = (word & 32) === 32;
-    returnObj.passwordFlag = (word & 64) === 64;
-    returnObj.usernameFlag = (word & 128) === 128;
-    return returnObj;
-}
-
-describe('Parsing CONNECT flags', function() {
-
-    function createFlagsBuffer(word) {
-        var buffer = new Buffer(1);
-        buffer.writeUInt8(word, 0);
-        return buffer;
-    }
-    it('parses true for reserved', function() {
-        var connectFlags = parseConnectFlags(createFlagsBuffer(1), 0);
-        connectFlags.reserved.should.eql(true);
-    });
-
-    it('parses true for clean session', function() {
-        var connectFlags = parseConnectFlags(createFlagsBuffer(2), 0);
-        connectFlags.cleanSession.should.eql(true);
-    });
-
-    it('parses true for will flag', function() {
-        var connectFlags = parseConnectFlags(createFlagsBuffer(4), 0);
-        connectFlags.willFlag.should.eql(true);
-    });
-
-    it('parses AT_MOST_ONCE for will qos', function() {
-        var connectFlags = parseConnectFlags(createFlagsBuffer(0), 0);
-        connectFlags.willQos.should.eql(constants.qualityOfService.AT_MOST_ONCE);
-    });
-
-    it('parses AT_LEAST_ONCE for will qos', function() {
-        var connectFlags = parseConnectFlags(createFlagsBuffer(8), 0);
-        connectFlags.willQos.should.eql(constants.qualityOfService.AT_LEAST_ONCE);
-    });
-
-    it('parses EXACTLY_ONCE for will qos', function() {
-        var connectFlags = parseConnectFlags(createFlagsBuffer(16), 0);
-        connectFlags.willQos.should.eql(constants.qualityOfService.EXACTLY_ONCE);
-    });
-
-    it('parses RESERVED for will qos', function() {
-        var connectFlags = parseConnectFlags(createFlagsBuffer(24), 0);
-        connectFlags.willQos.should.eql(constants.qualityOfService.RESERVED);
-    });
-
-    it('parses true for will retain', function() {
-        var connectFlags = parseConnectFlags(createFlagsBuffer(32), 0);
-        connectFlags.willRetain.should.eql(true);
-    });
-
-    it('parses true for password flag', function() {
-        var connectFlags = parseConnectFlags(createFlagsBuffer(64), 0);
-        connectFlags.passwordFlag.should.eql(true);
-    });
-
-    it('parses true for username flag', function() {
-        var connectFlags = parseConnectFlags(createFlagsBuffer(128), 0);
-        connectFlags.usernameFlag.should.eql(true);
-    });
-
-    it('parse returns defaults', function() {
-        var connectFlags = parseConnectFlags(createFlagsBuffer(0), 0);
-        connectFlags.should.eql({
-            reserved: false,
-            cleanSession: false,
-            willFlag: false,
-            willQos: constants.qualityOfService.AT_MOST_ONCE,
-            willRetain: false,
-            passwordFlag: false,
-            usernameFlag: false
-        });
-    });
-});
 
 describe('MQTT UTF-8 string', function() {
 
@@ -255,7 +57,7 @@ describe('MQTT UTF-8 string', function() {
         sizeBuffer.writeUInt16BE(utf8Char.length, 0);
         var mqttUtfBuffer = Buffer.concat([sizeBuffer, new Buffer(utf8Char)]);
 
-        var result = decodeMqttUtfString(mqttUtfBuffer, 0);
+        var result = services.strings.decode(mqttUtfBuffer, 0);
         result.value.should.eql(euro.toString('utf8'));
         result.byteCount.should.eql(3);
         result.totalByteCount.should.eql(5);
@@ -263,7 +65,7 @@ describe('MQTT UTF-8 string', function() {
 
     it('encoding', function() {
         var utf8Char = [0xE2, 0x82, 0xAC];
-        var mqttEncodedStringBuffer = encodeMqttUtfString(new Buffer(utf8Char).toString('utf8'));
+        var mqttEncodedStringBuffer = services.strings.encode(new Buffer(utf8Char).toString('utf8'));
         mqttEncodedStringBuffer.readUInt16BE(0).should.eql(3);
         mqttEncodedStringBuffer[2].should.eql(utf8Char[0]);
         mqttEncodedStringBuffer[3].should.eql(utf8Char[1]);
@@ -313,7 +115,7 @@ describe('Parsing a Connect Message', function() {
         }
 
         function withProtocolName(value) {
-            var encodedValue = encodeMqttUtfString(value);
+            var encodedValue = services.strings.encode(value);
             buffers[2] = encodedValue;
             return self;
         }
@@ -357,31 +159,31 @@ describe('Parsing a Connect Message', function() {
         }
 
         function withClientIdentifier(value) {
-            var encodedValue = encodeMqttUtfString(value);
+            var encodedValue = services.strings.encode(value);
             buffers[6] = encodedValue;
             return self;
         }
 
         function withWillTopic(value) {
-            var encodedValue = encodeMqttUtfString(value);
+            var encodedValue = services.strings.encode(value);
             payloadBuffers[0] = encodedValue;
             return self;
         }
 
         function withWillMessage(value) {
-            var encodedValue = encodeMqttUtfString(value);
+            var encodedValue = services.strings.encode(value);
             payloadBuffers[1] = encodedValue;
             return self;
         }
 
         function withUsername(value) {
-            var encodedValue = encodeMqttUtfString(value);
+            var encodedValue = services.strings.encode(value);
             payloadBuffers[2] = encodedValue;
             return self;
         }
 
         function withPassword(value) {
-            var encodedValue = encodeMqttUtfString(value);
+            var encodedValue = services.strings.encode(value);
             payloadBuffers[3] = encodedValue;
             return self;
         }
