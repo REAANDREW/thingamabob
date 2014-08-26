@@ -4,14 +4,6 @@ var should = require('should');
 var constants = require('../lib/constants');
 var services = require('../lib/services');
 
-var errorCodes = {
-    connect: {
-        malformedRemainingLength: {
-            statusCode: 1,
-            statusMessage: 'the remaining length should be between 1 and 4 bytes long inclusive'
-        }
-    }
-};
 
 function parseRemainingLength(buffer) {
     var bytes = services.remainingLength.readBytes(buffer);
@@ -45,7 +37,7 @@ function parseConnectPacket(buffer) {
     message.type = (buffer.readUInt8(0) & 16) >> 4;
     var remainingLengthResult = parseRemainingLength(buffer);
     if (remainingLengthResult instanceof Error) {
-        return errorCodes.connect.malformedRemainingLength;
+        return constants.errorCodes.connect.malformedRemainingLength;
     }
     message.headers.fixed.remainingLength = remainingLengthResult;
 
@@ -479,7 +471,7 @@ describe('Parsing a Connect Message', function() {
             var buffer = subject.withRemainingLength(remainingLength).buffer();
             parseConnectMessage(buffer, function(err) {
                 should.exist(err);
-                err.should.eql(errorCodes.connect.malformedRemainingLength);
+                err.should.eql(constants.errorCodes.connect.malformedRemainingLength);
             });
         });
     });
