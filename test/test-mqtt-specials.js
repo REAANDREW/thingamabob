@@ -14,6 +14,31 @@ describe('MQTT Special Functions', function() {
     var threeByteUpperLimit = services.remainingLength.upperLimit(3);
     var fourByteUpperLimit = services.remainingLength.upperLimit(4);
 
+    describe('MQTT UTF-8 string', function() {
+
+        it('decoding', function() {
+            var utf8Char = [0xE2, 0x82, 0xAC];
+            var euro = new Buffer(utf8Char);
+            var sizeBuffer = new Buffer(2);
+            sizeBuffer.writeUInt16BE(utf8Char.length, 0);
+            var mqttUtfBuffer = Buffer.concat([sizeBuffer, new Buffer(utf8Char)]);
+
+            var result = services.strings.decode(mqttUtfBuffer, 0);
+            result.value.should.eql(euro.toString('utf8'));
+            result.byteCount.should.eql(3);
+            result.totalByteCount.should.eql(5);
+        });
+
+        it('encoding', function() {
+            var utf8Char = [0xE2, 0x82, 0xAC];
+            var mqttEncodedStringBuffer = services.strings.encode(new Buffer(utf8Char).toString('utf8'));
+            mqttEncodedStringBuffer.readUInt16BE(0).should.eql(3);
+            mqttEncodedStringBuffer[2].should.eql(utf8Char[0]);
+            mqttEncodedStringBuffer[3].should.eql(utf8Char[1]);
+            mqttEncodedStringBuffer[4].should.eql(utf8Char[2]);
+        });
+
+    });
     describe('Encoding remaining length', function() {
         function expectEncoding(value, expectedValues) {
             var result = services.remainingLength.encode(value);
@@ -110,15 +135,15 @@ describe('MQTT Special Functions', function() {
         });
 
         it('finds two bytes', function() {
-            find([0xFF,0x7F]);
+            find([0xFF, 0x7F]);
         });
 
-        it('finds three bytes', function(){
-            find([0xFF,0xFF,0x7F]);
+        it('finds three bytes', function() {
+            find([0xFF, 0xFF, 0x7F]);
         });
 
-        it('find four bytes', function(){
-            find([0xFF,0xFF,0xFF,0x7F]);
+        it('find four bytes', function() {
+            find([0xFF, 0xFF, 0xFF, 0x7F]);
         });
 
     });

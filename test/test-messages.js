@@ -47,33 +47,6 @@ function parseConnectMessage(buffer, callback) {
     parseProxy(buffer, callback);
 }
 
-
-describe('MQTT UTF-8 string', function() {
-
-    it('decoding', function() {
-        var utf8Char = [0xE2, 0x82, 0xAC];
-        var euro = new Buffer(utf8Char);
-        var sizeBuffer = new Buffer(2);
-        sizeBuffer.writeUInt16BE(utf8Char.length, 0);
-        var mqttUtfBuffer = Buffer.concat([sizeBuffer, new Buffer(utf8Char)]);
-
-        var result = services.strings.decode(mqttUtfBuffer, 0);
-        result.value.should.eql(euro.toString('utf8'));
-        result.byteCount.should.eql(3);
-        result.totalByteCount.should.eql(5);
-    });
-
-    it('encoding', function() {
-        var utf8Char = [0xE2, 0x82, 0xAC];
-        var mqttEncodedStringBuffer = services.strings.encode(new Buffer(utf8Char).toString('utf8'));
-        mqttEncodedStringBuffer.readUInt16BE(0).should.eql(3);
-        mqttEncodedStringBuffer[2].should.eql(utf8Char[0]);
-        mqttEncodedStringBuffer[3].should.eql(utf8Char[1]);
-        mqttEncodedStringBuffer[4].should.eql(utf8Char[2]);
-    });
-
-});
-
 describe('Parsing a Connect Message', function() {
 
     function message() {
