@@ -51,13 +51,23 @@ module.exports = function(grunt) {
             },
             lib: {
                 files: '<%= jshint.lib.src %>',
-                tasks: ['jshint:lib', 'mochaTest:test', 'mochaTest:coverage']
+                tasks: ['jshint:lib', 'mochaTest:test', 'mochaTest:coverage', 'cucumberjs']
             },
             test: {
                 files: '<%= jshint.test.src %>',
                 tasks: ['jshint:test', 'mochaTest:test', 'mochaTest:coverage']
             },
+            features: {
+                files: ['features/**/*.feature'],
+                tasks: ['cucumberjs']
+            },
         },
+        cucumberjs: {
+            src: './features',
+            options: {
+                steps: "./features"
+            }
+        }
     });
 
     grunt.loadNpmTasks('grunt-mocha-test');
@@ -65,6 +75,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-watch');
     grunt.loadNpmTasks('grunt-blanket');
     grunt.loadNpmTasks('grunt-notify');
+    grunt.loadNpmTasks('grunt-cucumber');
     // Default task.
     grunt.registerTask('default', ['jshint:gruntfile', 'jshint:bin', 'jshint:lib', 'jshint:test', 'mochaTest:test', 'mochaTest:coverage']);
 
