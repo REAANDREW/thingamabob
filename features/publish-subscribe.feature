@@ -4,7 +4,7 @@ Feature: Publish and Subscribe
     So that I can publish and subscribe to messages
 
     Scenario: Connecting to a server
-        Given an address of a thingamabob server
-          And a thingamabob client
+        Given I am a thingamabob client on port 19756
+          And a thingamabob server on port 99756
          When I send a CONNECT message
          Then I receive a CONACK reply

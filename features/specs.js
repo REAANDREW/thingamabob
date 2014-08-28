@@ -3,19 +3,21 @@
 function Specs() {
     //console.log('After:', this.World);
 
-    this.Given(/^a thingamabob client$/, function(callback) {
+    this.Given(/^I am a thingamabob client on port (\d*)$/, function(port, callback) {
         // Write code here that turns the phrase above into concrete actions
-        callback.pending();
+        this.createClient(port, callback);
     });
 
-    this.Given(/^an address of a thingamabob server$/, function(callback) {
+    this.Given(/^a thingamabob server on port (\d*)$/, function(port, callback) {
         // Write code here that turns the phrase above into concrete actions
-        callback.pending();
+        this.createServer(port, callback);
     });
 
     this.When(/^I send a CONNECT message$/, function(callback) {
         // Write code here that turns the phrase above into concrete actions
-        callback.pending();
+        console.log('client:', this.Client);
+        console.log('server:', this.Server);
+        this.Client.connect(this.Server.url, callback);
     });
 
     this.Then(/^I receive a CONACK reply$/, function(callback) {
