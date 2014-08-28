@@ -39,6 +39,9 @@ module.exports = function(grunt) {
             bin: {
                 src: ['bin/*']
             },
+            features: {
+                src: ['features/**/*.js']
+            },
         },
         watch: {
             gruntfile: {
@@ -58,14 +61,15 @@ module.exports = function(grunt) {
                 tasks: ['jshint:test', 'mochaTest:test', 'mochaTest:coverage']
             },
             features: {
-                files: ['features/**/*.feature'],
-                tasks: ['cucumberjs']
+                files: ['features/**/*.js', 'features/**/*.feature'],
+                tasks: ['jshint:features', 'cucumberjs']
             },
         },
         cucumberjs: {
             src: './features',
             options: {
-                steps: "./features"
+                steps: './features',
+                format: 'pretty'
             }
         }
     });

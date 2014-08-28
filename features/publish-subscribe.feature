@@ -5,5 +5,6 @@ Feature: Publish and Subscribe
 
     Scenario: Connecting to a server
         Given an address of a thingamabob server
-        When I send a CONNECT message
-        Then I receive a CONACK reply
+          And a thingamabob client
+         When I send a CONNECT message
+         Then I receive a CONACK reply
