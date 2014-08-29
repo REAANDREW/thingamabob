@@ -1,7 +1,22 @@
 'use strict';
+require('should');
+
+function WrappedServer(options) {
+    var url = require('url');
+    var thingamabob = require('../../lib/thingamabob');
+
+    var server = thingamabob.createServer(options);
+    //TODO: actually wrap the server with test stuffs
+    server.url = url.format({
+        protocol: 'tcp',
+        hostname: 'localhost',
+        port: options.port,
+        slashes: true
+    });
+    return server;
+}
 
 function WorldConstructor() {
-    var url = require('url');
 
     this.World = function World(callback) {
 
@@ -11,20 +26,17 @@ function WorldConstructor() {
                 connect: function(url, callback) {
                     console.log('connecting to:', url);
                     callback();
-                }
+                },
+                messages: [{
+                    msgType: 'CONACK'
+                }]
             });
             callback();
         };
 
         this.createServer = function CreateServer(port, callback) {
-            this.Server = Object.freeze({
+            this.Server = new WrappedServer({
                 port: port,
-                url: url.format({
-                    protocol: 'tcp',
-                    hostname: 'localhost',
-                    port: port,
-                    slashes: true
-                })
             });
             callback();
         };
