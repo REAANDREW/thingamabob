@@ -22,6 +22,8 @@ function Specs() {
 
     this.Then(/^I receive a CONACK reply$/, function(callback) {
         // Write code here that turns the phrase above into concrete actions
+        this.Client.messages.should.have.lengthOf(1);
+        this.Client.messages[0].msgType.should.eql('CONACK');
         callback.pending();
     });
 }
