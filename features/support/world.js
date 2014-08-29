@@ -16,20 +16,28 @@ function WrappedServer(options) {
     return server;
 }
 
+function WrappedClient(options) {
+    var thingamabob = require('../../lib/thingamabob');
+
+    var client = thingamabob.createClient(options);
+        client.port = options.port;
+        client.connect = function connect(url, callback) {
+            console.log('connecting to:', url);
+            callback();
+        };
+        client.messages = [{
+            msgType: 'CONACK'
+        }];
+    return client;
+}
+
 function WorldConstructor() {
 
     this.World = function World(callback) {
 
         this.createClient = function CreateClient(port, callback) {
-            this.Client = Object.freeze({
+            this.Client = new WrappedClient({
                 port: port,
-                connect: function(url, callback) {
-                    console.log('connecting to:', url);
-                    callback();
-                },
-                messages: [{
-                    msgType: 'CONACK'
-                }]
             });
             callback();
         };
