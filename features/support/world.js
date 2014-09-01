@@ -26,6 +26,7 @@ function WrappedClient(options) {
     var thingamabob = require('../../lib/thingamabob');
 
     var self = {};
+    var messages = [];
 
     var client = thingamabob.createClient(options);
     self.connect = function(host, port, callback) {
@@ -35,10 +36,12 @@ function WrappedClient(options) {
             callback();
         });
     };
-    self.messages = [{
-        msgType: 'CONACK'
-    }];
-    return self;
+    client.on('data', function(data) {
+        messages.push(JSON.parse(data.toString())); 
+    });
+    self.messages = messages;
+
+    return Object.freeze(self);
 }
 
 function WorldConstructor() {
