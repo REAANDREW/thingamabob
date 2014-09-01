@@ -12,15 +12,12 @@ function Specs() {
     });
 
     this.When(/^I send a CONNECT message$/, function(callback) {
-        console.log('client:', this.Client);
-        console.log('server:', this.Server);
         this.Client.connect(this.Server.host, this.Server.port, callback);
     });
 
     this.Then(/^I receive a CONACK reply$/, function(callback) {
         var client = this.Client;
         setTimeout(function() {
-            console.log('client:', client);
             client.messages.should.have.lengthOf(1);
             client.messages[0].msgType.should.eql('CONACK');
             callback();
