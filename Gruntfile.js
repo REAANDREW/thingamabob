@@ -81,6 +81,9 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-notify');
     grunt.loadNpmTasks('grunt-cucumber');
     // Default task.
-    grunt.registerTask('default', ['jshint:gruntfile', 'jshint:bin', 'jshint:lib', 'jshint:test', 'mochaTest:test', 'mochaTest:coverage']);
+    grunt.registerTask('default', ['jshint:gruntfile', 'jshint:bin', 'jshint:lib', 'jshint:test', 'mochaTest:test', 'mochaTest:coverage', 'cucumberjs']);
 
+    grunt.registerTask('lint', ['jshint']);
+    grunt.registerTask('test', ['mochaTest']);
+    grunt.registerTask('features', ['cucumberjs']);
 };

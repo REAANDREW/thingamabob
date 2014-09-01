@@ -2,33 +2,43 @@
 require('should');
 
 function WrappedServer(options) {
-    var url = require('url');
     var thingamabob = require('../../lib/thingamabob');
 
+    var self = {};
+
     var server = thingamabob.createServer(options);
+
+    self.listen = function(callback) {
+        return server.listen(callback);
+    };
+    self.close = function(callback) {
+        return server.close(callback);
+    };
+
     //TODO: actually wrap the server with test stuffs
-    server.url = url.format({
-        protocol: 'tcp',
-        hostname: 'localhost',
-        port: options.port,
-        slashes: true
-    });
-    return server;
+    self.host = '127.0.0.1';
+    self.port = options.port;
+
+    return Object.freeze(self);
 }
 
 function WrappedClient(options) {
     var thingamabob = require('../../lib/thingamabob');
 
+    var self = {};
+
     var client = thingamabob.createClient(options);
-        client.port = options.port;
-        client.connect = function connect(url, callback) {
-            console.log('connecting to:', url);
+    self.connect = function(host, port, callback) {
+        console.log('connecting to:', host, port);
+        return client.connect(host, port, function(){
+            console.log('connected');
             callback();
-        };
-        client.messages = [{
-            msgType: 'CONACK'
-        }];
-    return client;
+        });
+    };
+    self.messages = [{
+        msgType: 'CONACK'
+    }];
+    return self;
 }
 
 function WorldConstructor() {
@@ -44,9 +54,10 @@ function WorldConstructor() {
 
         this.createServer = function CreateServer(port, callback) {
             this.Server = new WrappedServer({
+                host: '127.0.0.1',
                 port: port,
             });
-            callback();
+            this.Server.listen(callback);
         };
 
         callback();
