@@ -5,8 +5,20 @@ var deride = require('deride');
 // temp implementation
 function MessageFactory(options) {
 
+    var constants = require('../lib/constants');
+
+    function parseMessageType(inputBuffer) {
+        var firstByte = inputBuffer.readUInt8(0);
+        var fourBitTransformation = ((firstByte & 0xf0) >> 4);
+        return fourBitTransformation;
+    }
+
     function parse(buffer) {
-        var parser = options.parsers.CONNECT;
+        var code = parseMessageType(buffer);
+        var type = _.findKey(constants.messageTypes, function(val) {
+            return val === code;
+        });
+        var parser = options.parsers[type];
         return parser.parsePacket(buffer);
     }
 
@@ -24,6 +36,13 @@ describe('MessageFactory', function() {
         msg: (function() {
             var input = new Buffer(5);
             input.writeUInt8(16, 0);
+            return input;
+        })(),
+    }, {
+        type: 'ConnAck',
+        msg: (function() {
+            var input = new Buffer(5);
+            input.writeUInt8(32, 0);
             return input;
         })(),
     }];
