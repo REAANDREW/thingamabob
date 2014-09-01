@@ -18,9 +18,12 @@ function Specs() {
     });
 
     this.Then(/^I receive a CONACK reply$/, function(callback) {
-        this.Client.messages.should.have.lengthOf(1);
-        this.Client.messages[0].msgType.should.eql('CONACK');
-        callback.pending();
+        var client = this.Client;
+        setTimeout(function() {
+            client.messages.should.have.lengthOf(1);
+            client.messages[0].msgType.should.eql('CONACK');
+            callback();
+        }, 100);
     });
 }
 
