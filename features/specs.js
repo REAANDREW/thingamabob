@@ -20,10 +20,11 @@ function Specs() {
     this.Then(/^I receive a CONACK reply$/, function(callback) {
         var client = this.Client;
         setTimeout(function() {
+            console.log('client:', client);
             client.messages.should.have.lengthOf(1);
             client.messages[0].msgType.should.eql('CONACK');
             callback();
-        }, 100);
+        }, 50);
     });
 }
 
