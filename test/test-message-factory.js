@@ -1,5 +1,8 @@
 'use strict';
+/*jshint expr: true*/
+
 var _ = require('lodash');
+var should = require('should');
 var deride = require('deride');
 
 // temp implementation
@@ -13,13 +16,22 @@ function MessageFactory(options) {
         return fourBitTransformation;
     }
 
-    function parse(buffer) {
+    function parse(buffer, callback) {
         var code = parseMessageType(buffer);
         var type = _.findKey(constants.messageTypes, function(val) {
             return val === code;
         });
+        if (type === undefined) {
+            callback(new Error('Reserved Control Packet Type', code), null);
+            return;
+        }
         var parser = options.parsers[type];
-        return parser.parsePacket(buffer);
+        if (parser === undefined) {
+            callback(new Error('No parser for type', code, type), null);
+            return;
+        }
+
+        callback(null, parser.parsePacket(buffer));
     }
 
     return Object.freeze({
@@ -69,15 +81,43 @@ describe('MessageFactory', function() {
                 });
             });
 
-            it('reads the fixed header and calls the ' + test.type + ' Packet Parser', function() {
-                factory.parse(test.msg);
-                parsers[test.type.toUpperCase()].expect.parsePacket.called.once();
+            it('reads the fixed header and calls the ' + test.type + ' Packet Parser', function(done) {
+                factory.parse(test.msg, function() {
+                    parsers[test.type.toUpperCase()].expect.parsePacket.called.once();
+                    done();
+                });
             });
         });
     });
 
     describe('handles invalid messages', function() {
-        it('returns an error for a forbidden (0) type');
-        it('returns an error for a forbidden (15) type');
+        var factory, input;
+
+        beforeEach(function() {
+            factory = new MessageFactory({
+                parsers: {}
+            });
+            input = new Buffer(5);
+        });
+
+        it('returns an error for a forbidden (0) type', function(done) {
+            input.writeUInt8(0, 0);
+            factory.parse(input, function(error, msg) {
+                should(error).not.be.null;
+                should(msg).be.null;
+                error.should.have.property('message', 'Reserved Control Packet Type');
+                done();
+            });
+        });
+
+        it('returns an error for a forbidden (15) type', function(done) {
+            input.writeUInt8(128 + 64 + 32 + 16, 0);
+            factory.parse(input, function(error, msg) {
+                should(error).not.be.null;
+                should(msg).be.null;
+                error.should.have.property('message', 'Reserved Control Packet Type');
+                done();
+            });
+        });
     });
 });
