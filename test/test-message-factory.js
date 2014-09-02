@@ -6,42 +6,9 @@ var should = require('should');
 var deride = require('deride');
 
 // temp implementation
-function MessageFactory(options) {
-
-    var constants = require('../lib/constants');
-
-    function parseMessageType(inputBuffer) {
-        var firstByte = inputBuffer.readUInt8(0);
-        var fourBitTransformation = ((firstByte & 0xf0) >> 4);
-        return fourBitTransformation;
-    }
-
-    function parse(buffer, callback) {
-        var code = parseMessageType(buffer);
-        var type = _.findKey(constants.messageTypes, function(val) {
-            return val === code;
-        });
-        if (type === undefined) {
-            callback(new Error('Reserved Control Packet Type', code), null);
-            return;
-        }
-        var parser = options.parsers[type];
-        if (parser === undefined) {
-            callback(new Error('No parser for type', code, type), null);
-            return;
-        }
-
-        callback(null, parser.parsePacket(buffer));
-    }
-
-    return Object.freeze({
-        parse: parse
-    });
-}
-
 describe('MessageFactory', function() {
 
-    //var MessageFactory = require('../lib/thingamabob').MessageFactory;
+    var MessageFactory = require('../lib/thingamabob').MessageFactory;
 
     var tests = [{
         type: 'Connect',
