@@ -3,7 +3,7 @@
 require('should');
 var packets = require('../lib/packets');
 
-describe.only('Control Packet Builders', function() {
+describe('Control Packet Builders', function() {
 
     describe('CONNECT', function() {
         var packet = packets.connect;
