@@ -42,10 +42,6 @@ function WrappedClient(options) {
         messages.push(data);
     });
 
-    //client.on('data', function(data) {
-    //    messages.push(JSON.parse(data.toString()));
-    //});
-
     self.messages = messages;
 
     return Object.freeze(self);
