@@ -19,7 +19,6 @@ function WrappedServer(options) {
         console.log('CONNECT received from:', host, port);
     });
 
-    //TODO: actually wrap the server with test stuffs
     self.host = '127.0.0.1';
     self.port = options.port;
 
@@ -34,13 +33,15 @@ function WrappedClient(options) {
 
     var client = thingamabob.createClient(options);
     self.connect = function(host, port, callback) {
-        return client.connect(host, port, function(){
+        return client.connect(host, port, function() {
             callback();
         });
     };
-    client.on('data', function(data) {
-        messages.push(JSON.parse(data.toString())); 
+
+    client.on('CONNACK', function(data) {
+        messages.push(data);
     });
+
     self.messages = messages;
 
     return Object.freeze(self);

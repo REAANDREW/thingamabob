@@ -1,7 +1,6 @@
 'use strict';
 
 function Specs() {
-    //console.log('After:', this.World);
 
     this.Given(/^I am a thingamabob client on port (\d*)$/, function(port, callback) {
         this.createClient(port, callback);
@@ -19,7 +18,7 @@ function Specs() {
         var client = this.Client;
         setTimeout(function() {
             client.messages.should.have.lengthOf(1);
-            client.messages[0].msgType.should.eql('CONACK');
+            client.messages[0].payload.typeName.should.eql('CONNACK');
             callback();
         }, 50);
     });
